@@ -8,46 +8,55 @@ import yfinance as yf
 
 
 
+"""Get user inputs for trading strategy"""
+
+"""
+1) ticker
+2) period, interval
+3) entry comparison 1, which is the first comparison between indicators, constants, or price
+4) get candles ago for entry comparison 1'
+5) entry strategy get_strategy_selection()
+6) entry comparision 2 and then exit start
+
+
+
+"""
 
 def get_strategy_inputs():
-    """Get user inputs for trading strategy"""
+
     print("\n" + "="*60)
     print("TRADING STRATEGY SELECTION")
     print("="*60)
     
     # Ticker
     ticker = input("Enter ticker symbol [default: AAPL]: ").upper().strip()
+    if not ticker: ticker = "AAPL" # If empty input, default to AAPL
+
+    period, interval = get_time_interval_inputs() # Time interval selection
     
-    # If empty input, default to AAPL
-    if not ticker:
-        ticker = "AAPL"
-    
-    # Time interval selection
-    period, interval = get_time_interval_inputs()
-    
-    # Entry Strategy
     print("\n--- ENTRY STRATEGY ---")
     
-    # Entry Comparison 1
-    print("Entry Comparison 1:")
+    """Capture comparision between indicators, constants, or price"""
+
+    print("Entry Comparison 1:") # Entry Comparison 1
     entry_comp1_type = get_comparison_type()
     if entry_comp1_type is None:
-        return None
+        entry_comp1_type = ComparisonType.INDICATOR # If empty input, default to indicators
     
-    if entry_comp1_type == ComparisonType.INDICATOR:
-        entry_comp1_name = get_indicator_selection()
+    if entry_comp1_type == ComparisonType.INDICATOR: # tracking which option is selected
+        entry_comp1_name = get_indicator_selection() # get indicator selection
         if entry_comp1_name is None:
-            return None
+            entry_comp1_name = "SMA" # If empty input, default to SMA
         entry_comp1_params = get_indicator_params(entry_comp1_name)
-    elif entry_comp1_type == ComparisonType.CONSTANT:
+    elif entry_comp1_type == ComparisonType.CONSTANT: # get constant value
         entry_comp1_name = "CONSTANT"
         entry_comp1_params = (get_constant_value(),)
-    else:  # PRICE
+    else:  # PRICE # get price column
         entry_comp1_name = "PRICE"
         entry_comp1_params = (get_price_column(),)
     
-    # Get candles ago for entry comparison 1
-    entry_comp1_candles_ago = get_candles_ago("Entry Comparison 1")
+    
+    entry_comp1_candles_ago = get_candles_ago("Entry Comparison 1") # Get candles ago for entry comparison 1
     
     # Entry Strategy
     entry_strategy = get_strategy_selection()
