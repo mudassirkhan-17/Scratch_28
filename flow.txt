@@ -1,0 +1,5 @@
+first indicators file, input files, comparision,
+then we create strategy.py --> which will contain usage of functions etc
+strategy.py --> get_inputs() --> download_data() --> after we got data we make dataframe containing
+indicators --> calculate_indicators() --> now we got indciator we have to see how much to shift column
+i.e candle comparision

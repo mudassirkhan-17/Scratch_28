@@ -33,6 +33,58 @@ class Strategy:
             
         return self.strategy_data
 
+def calculate_indicators(data, strategy_data):
+    """Step 3: Calculate all required indicators"""
+    print(f"\nSTEP 3: Calculating indicators...")
+    from indicators import calculate_indicator
+    from comparision_types import ComparisonType
+    
+    # Extract indicator info from strategy_data
+    entry_comp1_type = strategy_data[3]
+    entry_comp1_name = strategy_data[4]
+    entry_comp1_params = strategy_data[5]
+    
+    entry_comp2_type = strategy_data[6]
+    entry_comp2_name = strategy_data[7]
+    entry_comp2_params = strategy_data[8]
+    
+    exit_comp1_type = strategy_data[9]
+    exit_comp1_name = strategy_data[10]
+    exit_comp1_params = strategy_data[11]
+    
+    exit_comp2_type = strategy_data[12]
+    exit_comp2_name = strategy_data[13]
+    exit_comp2_params = strategy_data[14]
+    
+    # Calculate indicators for entry comparison 1
+    if entry_comp1_type == ComparisonType.INDICATOR:
+        print(f"Calculating {entry_comp1_name} for entry comparison 1...")
+        data[f'{entry_comp1_name}_entry1'] = calculate_indicator(data, entry_comp1_name, entry_comp1_params)
+        print(f"✅ {entry_comp1_name} calculated")
+    
+    # Calculate indicators for entry comparison 2  
+    if entry_comp2_type == ComparisonType.INDICATOR:
+        print(f"Calculating {entry_comp2_name} for entry comparison 2...")
+        data[f'{entry_comp2_name}_entry2'] = calculate_indicator(data, entry_comp2_name, entry_comp2_params)
+        print(f"✅ {entry_comp2_name} calculated")
+    
+    # Calculate indicators for exit comparison 1
+    if exit_comp1_type == ComparisonType.INDICATOR:
+        print(f"Calculating {exit_comp1_name} for exit comparison 1...")
+        data[f'{exit_comp1_name}_exit1'] = calculate_indicator(data, exit_comp1_name, exit_comp1_params)
+        print(f"✅ {exit_comp1_name} calculated")
+    
+    # Calculate indicators for exit comparison 2
+    if exit_comp2_type == ComparisonType.INDICATOR:
+        print(f"Calculating {exit_comp2_name} for exit comparison 2...")
+        data[f'{exit_comp2_name}_exit2'] = calculate_indicator(data, exit_comp2_name, exit_comp2_params)
+        print(f"✅ {exit_comp2_name} calculated")
+    
+    print("✅ All indicators calculated")
+    print("📋 Next: Generate buy/sell signals")
+    
+    return data
+
 def execute_strategy():
     """Execute the complete strategy step by step"""
     
@@ -63,7 +115,9 @@ def execute_strategy():
         return
         
     print(f"✅ Downloaded {len(data)} rows of data")
-    print("📋 Next: Calculate indicators and generate signals")
+    
+    # Step 3: Calculate indicators
+    data = calculate_indicators(data, strategy_data)
     
     return strategy_data, data
 
