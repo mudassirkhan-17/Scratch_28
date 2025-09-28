@@ -158,7 +158,7 @@ def execute_long_strategy(data, strategy_data):
     
     # Your exact variables
     initial_cash = 1000  # Money we start with
-    invested_amount = initial_cash * 0.8  # 80% available for investment
+    invested_amount = initial_cash * 1.0  # 80% available for investment
     remaining = 0  # Unused investment money
     shares_owned = 0  # How many shares we own
     buying_price = 0  # Actual money spent on shares
@@ -228,6 +228,7 @@ def execute_long_strategy(data, strategy_data):
         else:
             total_portfolio = final_cash
         
+        
         # Store in DataFrame (only your variables)
         data.loc[data.index[i], 'Portfolio_Value'] = total_portfolio
         data.loc[data.index[i], 'Invested_Amount'] = invested_amount
@@ -256,7 +257,7 @@ def execute_short_strategy(data, strategy_data):
     
     # Your exact variables
     initial_cash = 1000  # Money we start with
-    invested_amount = initial_cash * 0.8  # 80% available for investment
+    invested_amount = initial_cash * 1.0  # 80% available for investment
     remaining = 0  # Unused investment money
     shares_owned = 0  # How many shares we own (negative for short)
     buying_price = 0  # Actual money spent on shares
@@ -270,6 +271,44 @@ def execute_short_strategy(data, strategy_data):
         current_price = data['Close'].iloc[i]
         entry_signal = data['Entry_Signal'].iloc[i]
         exit_signal = data['Exit_Signal'].iloc[i]
+        
+        # 🚨 LIQUIDATION CHECK FIRST: Check if we need to force close position
+        if shares_owned < 0:  # Only check if we have a short position
+            shorting_price = buying_price  # Money received from shorting (your variable)
+            buying_back = abs(shares_owned) * current_price  # Cost to cover position
+            threshold_stop = -(shorting_price * 1.0)  # 100% loss limit
+            
+            if (shorting_price - buying_back) <= threshold_stop:
+                print(f"🚨 LIQUIDATION TRIGGERED! Loss: ${shorting_price - buying_back:,.2f} <= ${threshold_stop:,.2f}")
+                
+                # Force cover short position using your formula
+                shares_to_cover = abs(shares_owned)
+                selling_price = buying_back  # Cost to buy back (your variable name)
+                final_cash = remaining + shorting_price + (shorting_price - selling_price)
+                profit_loss = shorting_price - selling_price
+                
+                print(f"💥 FORCED SHORT COVER: Bought {shares_to_cover} shares at ${current_price:.2f}")
+                print(f"  Money spent to cover (selling_price): ${selling_price:,.2f}")
+                print(f"  Liquidation loss: ${profit_loss:,.2f}")
+                print(f"  Final cash (your formula): ${final_cash:,.2f}")
+                
+                trades.append({
+                    'type': 'LIQUIDATION_SHORT',
+                    'price': current_price,
+                    'shares': shares_to_cover,
+                    'money_spent': selling_price,
+                    'profit_loss': profit_loss,
+                    'reason': f'Loss {shorting_price - buying_back:,.2f} exceeded threshold {threshold_stop:,.2f}'
+                })
+                
+                # Reset position after liquidation
+                invested_amount = final_cash
+                remaining = 0
+                shares_owned = 0
+                buying_price = 0
+                
+                # Skip normal signals and continue to next iteration
+                continue
         
         # SHORT ENTRY: Sell shares when signal says SELL (borrow and sell)
         if entry_signal and shares_owned == 0:
@@ -356,7 +395,7 @@ def execute_reversal_strategy(data, strategy_data):
     
     # Your exact variables
     initial_cash = 1000  # Money we start with
-    invested_amount = initial_cash * 0.8  # 80% available for investment
+    invested_amount = initial_cash * 1.0  # 80% available for investment
     remaining = 0  # Unused investment money
     shares_owned = 0  # How many shares we own (positive=long, negative=short)
     buying_price = 0  # Money involved in current position
@@ -371,6 +410,44 @@ def execute_reversal_strategy(data, strategy_data):
         current_price = data['Close'].iloc[i]
         entry_signal = data['Entry_Signal'].iloc[i]
         exit_signal = data['Exit_Signal'].iloc[i]
+        
+        # 🚨 LIQUIDATION CHECK FIRST: Check if we need to force close short position
+        if shares_owned < 0:  # Only check if we have a short position
+            shorting_price = buying_price  # Money received from shorting (your variable)
+            buying_back = abs(shares_owned) * current_price  # Cost to cover position
+            threshold_stop = -(shorting_price * 1.0)  # 100% loss limit
+            
+            if (shorting_price - buying_back) <= threshold_stop:
+                print(f"🚨 LIQUIDATION TRIGGERED! Loss: ${shorting_price - buying_back:,.2f} <= ${threshold_stop:,.2f}")
+                
+                # Force cover short position using your formula
+                shares_to_cover = abs(shares_owned)
+                selling_price = buying_back  # Cost to buy back (your variable name)
+                final_cash = remaining + shorting_price + (shorting_price - selling_price)
+                profit_loss = shorting_price - selling_price
+                
+                print(f"💥 FORCED SHORT COVER: Bought {shares_to_cover} shares at ${current_price:.2f}")
+                print(f"  Money spent to cover (selling_price): ${selling_price:,.2f}")
+                print(f"  Liquidation loss: ${profit_loss:,.2f}")
+                print(f"  Final cash (your formula): ${final_cash:,.2f}")
+                
+                trades.append({
+                    'type': 'LIQUIDATION_SHORT',
+                    'price': current_price,
+                    'shares': shares_to_cover,
+                    'money_spent': selling_price,
+                    'profit_loss': profit_loss,
+                    'reason': f'Loss {shorting_price - buying_back:,.2f} exceeded threshold {threshold_stop:,.2f}'
+                })
+                
+                # Reset position after liquidation - stay flat until next signal
+                invested_amount = final_cash
+                remaining = 0
+                shares_owned = 0
+                buying_price = 0
+                
+                # Skip normal signals and continue to next iteration
+                continue
         
         # ENTRY SIGNAL: Go LONG (flip from short to long, or enter long if flat)
         if entry_signal:
