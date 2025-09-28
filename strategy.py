@@ -174,6 +174,204 @@ def generate_signals(data, strategy_data):
     
     return data
 
+def execute_long_strategy(data, strategy_data):
+    """Step 5: Execute Long Entry/Exit Strategy - Using Your Exact Variables"""
+    print(f"\nSTEP 5: Executing Long Entry/Exit Strategy...")
+    
+    # Your exact variables
+    initial_cash = 1000  # Money we start with
+    invested_amount = initial_cash * 0.8  # 80% available for investment
+    remaining = 0  # Unused investment money
+    shares_owned = 0  # How many shares we own
+    buying_price = 0  # Actual money spent on shares
+    final_cash = 0  # Money from selling
+    trades = []
+    
+    print(f"Starting with: ${initial_cash:,.2f}")
+    print(f"Available to invest: ${invested_amount:,.2f} (80%)")
+    
+    for i in range(len(data)):
+        current_price = data['Close'].iloc[i]
+        entry_signal = data['Entry_Signal'].iloc[i]
+        exit_signal = data['Exit_Signal'].iloc[i]
+        
+        # LONG ENTRY: Buy shares when signal says BUY
+        if entry_signal and shares_owned == 0:
+            # Calculate how many shares we can buy with invested_amount
+            max_shares = int(invested_amount / current_price)  # Whole shares only
+            buying_price = max_shares * current_price  # Actual money spent
+            shares_owned = max_shares  # Shares we own
+            remaining = invested_amount - buying_price  # Leftover investment money
+            final_cash = 0  # Reset for calculation
+            
+            print(f"LONG ENTRY: Bought {shares_owned} shares at ${current_price:.2f}")
+            print(f"  Money spent (buying_price): ${buying_price:,.2f}")
+            print(f"  Leftover investment money (remaining): ${remaining:,.2f}")
+            
+            trades.append({
+                'type': 'BUY',
+                'price': current_price,
+                'shares': shares_owned,
+                'money_spent': buying_price
+            })
+        
+        # LONG EXIT: Sell shares when signal says SELL
+        elif exit_signal and shares_owned > 0:
+            selling_price = shares_owned * current_price  # Money received from selling
+            
+            # Your Formula: final_cash = remaining + buying_price + (selling_price - buying_price)
+            final_cash = remaining + buying_price + (selling_price - buying_price)
+            
+            profit_loss = selling_price - buying_price  # Profit or loss on shares
+            
+            print(f"LONG EXIT: Sold {shares_owned} shares at ${current_price:.2f}")
+            print(f"  Money received (selling_price): ${selling_price:,.2f}")
+            print(f"  Profit/Loss on shares: ${profit_loss:,.2f}")
+            print(f"  Final cash (your formula): ${final_cash:,.2f}")
+            
+            trades.append({
+                'type': 'SELL',
+                'price': current_price,
+                'shares': shares_owned,
+                'money_received': selling_price,
+                'profit_loss': profit_loss
+            })
+            
+            # Reset for next trade - final_cash becomes new invested_amount
+            invested_amount = final_cash
+            remaining = 0
+            shares_owned = 0
+            buying_price = 0
+        
+        # Calculate current total portfolio value (only your variables)
+        if shares_owned > 0:
+            current_position_value = shares_owned * current_price
+            total_portfolio = remaining + current_position_value
+        else:
+            total_portfolio = final_cash
+        
+        # Store in DataFrame (only your variables)
+        data.loc[data.index[i], 'Portfolio_Value'] = total_portfolio
+        data.loc[data.index[i], 'Invested_Amount'] = invested_amount
+        data.loc[data.index[i], 'Remaining'] = remaining
+        data.loc[data.index[i], 'Shares'] = shares_owned
+        data.loc[data.index[i], 'Position_Value'] = shares_owned * current_price if shares_owned > 0 else 0
+        data.loc[data.index[i], 'Final_Cash'] = final_cash
+    
+    # Final Results
+    final_portfolio_value = data['Portfolio_Value'].iloc[-1]
+    total_profit = final_portfolio_value - initial_cash
+    total_return_percent = (total_profit / initial_cash) * 100
+    
+    print(f"\n📊 FINAL RESULTS:")
+    print(f"Started with: ${initial_cash:,.2f}")
+    print(f"Ended with: ${final_portfolio_value:,.2f}")
+    print(f"Total Profit: ${total_profit:,.2f}")
+    print(f"Total Return: {total_return_percent:.2f}%")
+    print(f"Number of Trades: {len(trades)}")
+    
+    return data, trades
+
+def execute_short_strategy(data, strategy_data):
+    """Step 5: Execute Short Entry/Exit Strategy - Using Your Exact Variables"""
+    print(f"\nSTEP 5: Executing Short Entry/Exit Strategy...")
+    
+    # Your exact variables
+    initial_cash = 1000  # Money we start with
+    invested_amount = initial_cash * 0.8  # 80% available for investment
+    remaining = 0  # Unused investment money
+    shares_owned = 0  # How many shares we own (negative for short)
+    buying_price = 0  # Actual money spent on shares
+    final_cash = 0  # Money from selling
+    trades = []
+    
+    print(f"Starting with: ${initial_cash:,.2f}")
+    print(f"Available to invest: ${invested_amount:,.2f} (80%)")
+    
+    for i in range(len(data)):
+        current_price = data['Close'].iloc[i]
+        entry_signal = data['Entry_Signal'].iloc[i]
+        exit_signal = data['Exit_Signal'].iloc[i]
+        
+        # SHORT ENTRY: Sell shares when signal says SELL (borrow and sell)
+        if entry_signal and shares_owned == 0:
+            # Calculate how many shares we can short with invested_amount
+            max_shares = int(invested_amount / current_price)  # Whole shares only
+            buying_price = max_shares * current_price  # Money received from shorting
+            shares_owned = -max_shares  # Negative shares (we owe them)
+            remaining = invested_amount - buying_price  # Leftover investment money
+            final_cash = 0  # Reset for calculation
+            
+            print(f"SHORT ENTRY: Sold {max_shares} shares at ${current_price:.2f}")
+            print(f"  Money received (buying_price): ${buying_price:,.2f}")
+            print(f"  Leftover investment money (remaining): ${remaining:,.2f}")
+            
+            trades.append({
+                'type': 'SHORT',
+                'price': current_price,
+                'shares': max_shares,
+                'money_received': buying_price
+            })
+        
+        # SHORT EXIT: Buy shares when signal says BUY (buy back to cover)
+        elif exit_signal and shares_owned < 0:
+            shares_to_cover = abs(shares_owned)  # How many shares to buy back
+            selling_price = shares_to_cover * current_price  # Money spent to cover
+            
+            # Your Formula: final_cash = remaining + buying_price + (buying_price - selling_price)
+            # Note: For shorts, profit is when selling_price < buying_price
+            final_cash = remaining + buying_price + (buying_price - selling_price)
+            
+            profit_loss = buying_price - selling_price  # Profit when positive (sold high, bought low)
+            
+            print(f"SHORT EXIT: Bought {shares_to_cover} shares at ${current_price:.2f}")
+            print(f"  Money spent to cover (selling_price): ${selling_price:,.2f}")
+            print(f"  Profit/Loss on shares: ${profit_loss:,.2f}")
+            print(f"  Final cash (your formula): ${final_cash:,.2f}")
+            
+            trades.append({
+                'type': 'COVER',
+                'price': current_price,
+                'shares': shares_to_cover,
+                'money_spent': selling_price,
+                'profit_loss': profit_loss
+            })
+            
+            # Reset for next trade - final_cash becomes new invested_amount
+            invested_amount = final_cash
+            remaining = 0
+            shares_owned = 0
+            buying_price = 0
+        
+        # Calculate current total portfolio value (only your variables)
+        if shares_owned < 0:  # Short position
+            current_position_liability = abs(shares_owned) * current_price
+            total_portfolio = remaining + buying_price - current_position_liability
+        else:
+            total_portfolio = final_cash
+        
+        # Store in DataFrame (only your variables)
+        data.loc[data.index[i], 'Portfolio_Value'] = total_portfolio
+        data.loc[data.index[i], 'Invested_Amount'] = invested_amount
+        data.loc[data.index[i], 'Remaining'] = remaining
+        data.loc[data.index[i], 'Shares'] = shares_owned
+        data.loc[data.index[i], 'Position_Value'] = abs(shares_owned) * current_price if shares_owned != 0 else 0
+        data.loc[data.index[i], 'Final_Cash'] = final_cash
+    
+    # Final Results
+    final_portfolio_value = data['Portfolio_Value'].iloc[-1]
+    total_profit = final_portfolio_value - initial_cash
+    total_return_percent = (total_profit / initial_cash) * 100
+    
+    print(f"\n📊 FINAL RESULTS:")
+    print(f"Started with: ${initial_cash:,.2f}")
+    print(f"Ended with: ${final_portfolio_value:,.2f}")
+    print(f"Total Profit: ${total_profit:,.2f}")
+    print(f"Total Return: {total_return_percent:.2f}%")
+    print(f"Number of Trades: {len(trades)}")
+    
+    return data, trades
+
 def execute_strategy():
     """Execute the complete strategy step by step"""
     
@@ -211,13 +409,10 @@ def execute_strategy():
     # Step 4: Generate signals
     data = generate_signals(data, strategy_data)
     
-    # Show the final DataFrame
-    print(f"\n📊 FINAL DATAFRAME:")
-    print(f"Columns: {list(data.columns)}")
-    print(f"\nLast 5 rows:")
-    print(data.tail())
+    # Step 5: Execute Long Entry/Exit Strategy
+    data, trades = execute_long_strategy(data, strategy_data)
     
-    return strategy_data, data
+    return strategy_data, data, trades
 
 if __name__ == "__main__":
     execute_strategy()
