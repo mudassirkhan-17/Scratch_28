@@ -4,7 +4,7 @@ from display import *
 from metrics import *
 from comparision_types import ComparisonType
 import yfinance as yf
-from new12 import entry_multi_detector, exit_multi_detector
+# from new12 import entry_multi_detector, exit_multi_detector
 
 
 
