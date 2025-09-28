@@ -10,28 +10,6 @@ choice "2" → get_multi_strategy_inputs() → asks for multiple conditions with
 choice "3" → get_multi_ticker_inputs() → asks for portfolio allocation across multiple tickers
 choice "4" → get_multi_ticker_multi_strategy_inputs() → asks for different strategies per ticker"""
 
-class Strategy:
-    def __init__(self):
-        self.strategy_data = None
-        
-    def get_inputs(self):
-        print("1. Single Strategy")
-        print("2. Multi Strategy") 
-        print("3. Multi Ticker")
-        print("4. Multi Ticker Multi Strategy")
-        
-        choice = input("Choose (1-4): ")
-        
-        if choice == "1":
-            self.strategy_data = get_strategy_inputs()
-        elif choice == "2":
-            self.strategy_data = get_multi_strategy_inputs()
-        elif choice == "3":
-            self.strategy_data = get_multi_ticker_inputs()
-        elif choice == "4":
-            self.strategy_data = get_multi_ticker_multi_strategy_inputs()
-            
-        return self.strategy_data
 
 def calculate_indicators(data, strategy_data):
     """Step 3: Calculate all required indicators"""
@@ -372,13 +350,212 @@ def execute_short_strategy(data, strategy_data):
     
     return data, trades
 
+def execute_reversal_strategy(data, strategy_data):
+    """Step 5: Execute Long/Short Reversal Strategy - Always in Market"""
+    print(f"\nSTEP 5: Executing Long/Short Reversal Strategy...")
+    
+    # Your exact variables
+    initial_cash = 1000  # Money we start with
+    invested_amount = initial_cash * 0.8  # 80% available for investment
+    remaining = 0  # Unused investment money
+    shares_owned = 0  # How many shares we own (positive=long, negative=short)
+    buying_price = 0  # Money involved in current position
+    final_cash = 0  # Money from closing positions
+    trades = []
+    
+    print(f"Starting with: ${initial_cash:,.2f}")
+    print(f"Available to invest: ${invested_amount:,.2f} (80%)")
+    print("🔄 REVERSAL STRATEGY: Always in market - Entry=Long, Exit=Short")
+    
+    for i in range(len(data)):
+        current_price = data['Close'].iloc[i]
+        entry_signal = data['Entry_Signal'].iloc[i]
+        exit_signal = data['Exit_Signal'].iloc[i]
+        
+        # ENTRY SIGNAL: Go LONG (flip from short to long, or enter long if flat)
+        if entry_signal:
+            if shares_owned == 0:  # Currently flat - go long
+                max_shares = int(invested_amount / current_price)
+                buying_price = max_shares * current_price
+                shares_owned = max_shares  # Positive = long
+                remaining = invested_amount - buying_price
+                final_cash = 0
+                
+                print(f"📈 LONG ENTRY: Bought {shares_owned} shares at ${current_price:.2f}")
+                print(f"  Money spent (buying_price): ${buying_price:,.2f}")
+                print(f"  Remaining: ${remaining:,.2f}")
+                
+                trades.append({
+                    'type': 'LONG_ENTRY',
+                    'price': current_price,
+                    'shares': shares_owned,
+                    'money_spent': buying_price
+                })
+                
+            elif shares_owned < 0:  # Currently short - flip to long
+                shares_to_cover = abs(shares_owned)
+                cover_cost = shares_to_cover * current_price
+                
+                # Close short position first
+                short_profit = buying_price - cover_cost  # Profit from short
+                cash_after_cover = remaining + buying_price + short_profit
+                
+                # Now go long with available cash
+                new_invested = cash_after_cover
+                max_shares = int(new_invested / current_price)
+                new_buying_price = max_shares * current_price
+                shares_owned = max_shares  # Flip to positive (long)
+                buying_price = new_buying_price
+                remaining = new_invested - new_buying_price
+                final_cash = 0
+                
+                print(f"🔄 SHORT→LONG FLIP: Covered {shares_to_cover} shorts, bought {max_shares} longs at ${current_price:.2f}")
+                print(f"  Short profit: ${short_profit:,.2f}")
+                print(f"  New long position: ${new_buying_price:,.2f}")
+                
+                trades.append({
+                    'type': 'FLIP_TO_LONG',
+                    'price': current_price,
+                    'shares_covered': shares_to_cover,
+                    'shares_bought': max_shares,
+                    'short_profit': short_profit
+                })
+        
+        # EXIT SIGNAL: Go SHORT (flip from long to short, or enter short if flat)
+        elif exit_signal:
+            if shares_owned == 0:  # Currently flat - go short
+                max_shares = int(invested_amount / current_price)
+                buying_price = max_shares * current_price  # Money received from shorting
+                shares_owned = -max_shares  # Negative = short
+                remaining = invested_amount - buying_price
+                final_cash = 0
+                
+                print(f"📉 SHORT ENTRY: Sold {max_shares} shares at ${current_price:.2f}")
+                print(f"  Money received (buying_price): ${buying_price:,.2f}")
+                print(f"  Remaining: ${remaining:,.2f}")
+                
+                trades.append({
+                    'type': 'SHORT_ENTRY',
+                    'price': current_price,
+                    'shares': max_shares,
+                    'money_received': buying_price
+                })
+                
+            elif shares_owned > 0:  # Currently long - flip to short
+                shares_to_sell = shares_owned
+                sell_proceeds = shares_to_sell * current_price
+                
+                # Close long position first
+                long_profit = sell_proceeds - buying_price  # Profit from long
+                cash_after_sell = remaining + buying_price + long_profit
+                
+                # Now go short with available cash
+                new_invested = cash_after_sell
+                max_shares = int(new_invested / current_price)
+                new_buying_price = max_shares * current_price  # Money received from shorting
+                shares_owned = -max_shares  # Flip to negative (short)
+                buying_price = new_buying_price
+                remaining = new_invested - new_buying_price
+                final_cash = 0
+                
+                print(f"🔄 LONG→SHORT FLIP: Sold {shares_to_sell} longs, shorted {max_shares} at ${current_price:.2f}")
+                print(f"  Long profit: ${long_profit:,.2f}")
+                print(f"  New short position: ${new_buying_price:,.2f}")
+                
+                trades.append({
+                    'type': 'FLIP_TO_SHORT',
+                    'price': current_price,
+                    'shares_sold': shares_to_sell,
+                    'shares_shorted': max_shares,
+                    'long_profit': long_profit
+                })
+        
+        # Calculate current total portfolio value
+        if shares_owned > 0:  # Long position
+            current_position_value = shares_owned * current_price
+            total_portfolio = remaining + current_position_value
+        elif shares_owned < 0:  # Short position
+            current_position_liability = abs(shares_owned) * current_price
+            total_portfolio = remaining + buying_price - current_position_liability
+        else:  # Flat (shouldn't happen in reversal strategy)
+            total_portfolio = final_cash
+        
+        # Store in DataFrame
+        data.loc[data.index[i], 'Portfolio_Value'] = total_portfolio
+        data.loc[data.index[i], 'Invested_Amount'] = invested_amount
+        data.loc[data.index[i], 'Remaining'] = remaining
+        data.loc[data.index[i], 'Shares'] = shares_owned
+        data.loc[data.index[i], 'Position_Value'] = abs(shares_owned) * current_price if shares_owned != 0 else 0
+        data.loc[data.index[i], 'Final_Cash'] = final_cash
+    
+    # Final Results
+    final_portfolio_value = data['Portfolio_Value'].iloc[-1]
+    total_profit = final_portfolio_value - initial_cash
+    total_return_percent = (total_profit / initial_cash) * 100
+    
+    print(f"\n📊 FINAL RESULTS:")
+    print(f"Started with: ${initial_cash:,.2f}")
+    print(f"Ended with: ${final_portfolio_value:,.2f}")
+    print(f"Total Profit: ${total_profit:,.2f}")
+    print(f"Total Return: {total_return_percent:.2f}%")
+    print(f"Number of Trades: {len(trades)}")
+    
+    # Show final position
+    if shares_owned > 0:
+        print(f"Final Position: LONG {shares_owned} shares")
+    elif shares_owned < 0:
+        print(f"Final Position: SHORT {abs(shares_owned)} shares")
+    else:
+        print(f"Final Position: FLAT (no position)")
+    
+    return data, trades
+
 def execute_strategy():
     """Execute the complete strategy step by step"""
     
-    # Step 1: Get strategy inputs
-    print("STEP 1: Getting strategy inputs...")
-    strategy = Strategy()
-    strategy_data = strategy.get_inputs()
+    # Step 0: Choose Long or Short strategy using inputs.py function
+    from inputs import (get_strategy_direction, get_strategy_inputs, 
+                       get_multi_strategy_inputs, get_multi_ticker_inputs, 
+                       get_multi_ticker_multi_strategy_inputs)
+    
+
+    strategy_direction = get_strategy_direction()
+    
+    if strategy_direction is None:
+        print("❌ Strategy direction selection cancelled")
+        return
+    
+    # Map the direction to our strategy type
+    if strategy_direction == "Long Only":
+        strategy_type = "long"
+        print("✅ Selected: Long Strategy")
+    elif strategy_direction == "Short Only":
+        strategy_type = "short"
+        print("✅ Selected: Short Strategy")
+    else:  # Long/Short Reversal
+        strategy_type = "reversal"
+        print("✅ Selected: Long/Short Reversal Strategy")
+    
+    # Step 1: Choose strategy complexity and get inputs
+    print("\nSTEP 1: Getting strategy inputs...")
+    print("1. Single Strategy")
+    print("2. Multi Strategy") 
+    print("3. Multi Ticker")
+    print("4. Multi Ticker Multi Strategy")
+    
+    choice = input("Choose (1-4): ")
+    
+    if choice == "1":
+        strategy_data = get_strategy_inputs()
+    elif choice == "2":
+        strategy_data = get_multi_strategy_inputs()
+    elif choice == "3":
+        strategy_data = get_multi_ticker_inputs()
+    elif choice == "4":
+        strategy_data = get_multi_ticker_multi_strategy_inputs()
+    else:
+        print("❌ Invalid choice")
+        return
     
     if strategy_data is None:
         print("❌ No strategy data collected")
@@ -409,8 +586,13 @@ def execute_strategy():
     # Step 4: Generate signals
     data = generate_signals(data, strategy_data)
     
-    # Step 5: Execute Long Entry/Exit Strategy
-    data, trades = execute_long_strategy(data, strategy_data)
+    # Step 5: Execute Strategy based on user choice
+    if strategy_type == "long":
+        data, trades = execute_long_strategy(data, strategy_data)
+    elif strategy_type == "short":
+        data, trades = execute_short_strategy(data, strategy_data)
+    else:  # reversal
+        data, trades = execute_reversal_strategy(data, strategy_data)
     
     return strategy_data, data, trades
 
