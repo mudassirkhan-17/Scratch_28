@@ -85,6 +85,95 @@ def calculate_indicators(data, strategy_data):
     
     return data
 
+def generate_signals(data, strategy_data):
+    """Step 4: Generate buy/sell signals with candles ago logic"""
+    print(f"\nSTEP 4: Generating signals...")
+    from comparision_types import ComparisonType
+    import comparisons as comp
+    
+    # Extract all strategy info
+    entry_comp1_type = strategy_data[3]
+    entry_comp1_name = strategy_data[4] 
+    entry_comp1_params = strategy_data[5]
+    entry_comp2_type = strategy_data[6]
+    entry_comp2_name = strategy_data[7]
+    entry_comp2_params = strategy_data[8]
+    
+    exit_comp1_type = strategy_data[9]
+    exit_comp1_name = strategy_data[10]
+    exit_comp1_params = strategy_data[11]
+    exit_comp2_type = strategy_data[12]
+    exit_comp2_name = strategy_data[13]
+    exit_comp2_params = strategy_data[14]
+    
+    entry_strategy = strategy_data[15]
+    exit_strategy = strategy_data[16]
+    
+    entry_comp1_candles_ago = strategy_data[17]
+    entry_comp2_candles_ago = strategy_data[18]
+    exit_comp1_candles_ago = strategy_data[19]
+    exit_comp2_candles_ago = strategy_data[20]
+    
+    # Add shifted columns to data for comparison functions
+    if entry_comp1_type == ComparisonType.INDICATOR:
+        data[f'entry_comp1_shifted'] = data[f'{entry_comp1_name}_entry1'].shift(entry_comp1_candles_ago)
+    elif entry_comp1_type == ComparisonType.CONSTANT:
+        data[f'entry_comp1_shifted'] = entry_comp1_params[0]  # Just the constant value
+    else:  # PRICE
+        price_col = entry_comp1_params[0]  # e.g., "Close"
+        data[f'entry_comp1_shifted'] = data[price_col].shift(entry_comp1_candles_ago)
+    
+    if entry_comp2_type == ComparisonType.INDICATOR:
+        data[f'entry_comp2_shifted'] = data[f'{entry_comp2_name}_entry2'].shift(entry_comp2_candles_ago)
+    elif entry_comp2_type == ComparisonType.CONSTANT:
+        data[f'entry_comp2_shifted'] = entry_comp2_params[0]
+    else:  # PRICE
+        price_col = entry_comp2_params[0]
+        data[f'entry_comp2_shifted'] = data[price_col].shift(entry_comp2_candles_ago)
+    
+    # Generate entry signals using existing comparison functions
+    if entry_strategy == "CROSSED UP":
+        data['Entry_Signal'] = comp.crossed_up(data, 'entry_comp1_shifted', 'entry_comp2_shifted')
+    elif entry_strategy == "CROSSED DOWN":
+        data['Entry_Signal'] = comp.crossed_down(data, 'entry_comp1_shifted', 'entry_comp2_shifted')
+    elif entry_strategy == "GREATER THAN":
+        data['Entry_Signal'] = comp.greater_than(data, 'entry_comp1_shifted', 'entry_comp2_shifted')
+    elif entry_strategy == "LESS THAN":
+        data['Entry_Signal'] = comp.less_than(data, 'entry_comp1_shifted', 'entry_comp2_shifted')
+    # Add more comparison types as needed...
+    
+    # Add shifted columns for exit comparisons
+    if exit_comp1_type == ComparisonType.INDICATOR:
+        data[f'exit_comp1_shifted'] = data[f'{exit_comp1_name}_exit1'].shift(exit_comp1_candles_ago)
+    elif exit_comp1_type == ComparisonType.CONSTANT:
+        data[f'exit_comp1_shifted'] = exit_comp1_params[0]
+    else:  # PRICE
+        price_col = exit_comp1_params[0]
+        data[f'exit_comp1_shifted'] = data[price_col].shift(exit_comp1_candles_ago)
+    
+    if exit_comp2_type == ComparisonType.INDICATOR:
+        data[f'exit_comp2_shifted'] = data[f'{exit_comp2_name}_exit2'].shift(exit_comp2_candles_ago)
+    elif exit_comp2_type == ComparisonType.CONSTANT:
+        data[f'exit_comp2_shifted'] = exit_comp2_params[0]
+    else:  # PRICE
+        price_col = exit_comp2_params[0]
+        data[f'exit_comp2_shifted'] = data[price_col].shift(exit_comp2_candles_ago)
+    
+    # Generate exit signals using existing comparison functions
+    if exit_strategy == "CROSSED UP":
+        data['Exit_Signal'] = comp.crossed_up(data, 'exit_comp1_shifted', 'exit_comp2_shifted')
+    elif exit_strategy == "CROSSED DOWN":
+        data['Exit_Signal'] = comp.crossed_down(data, 'exit_comp1_shifted', 'exit_comp2_shifted')
+    elif exit_strategy == "GREATER THAN":
+        data['Exit_Signal'] = comp.greater_than(data, 'exit_comp1_shifted', 'exit_comp2_shifted')
+    elif exit_strategy == "LESS THAN":
+        data['Exit_Signal'] = comp.less_than(data, 'exit_comp1_shifted', 'exit_comp2_shifted')
+    
+    print("✅ Entry and exit signals generated")
+    print("📋 Next: Execute trades based on signals")
+    
+    return data
+
 def execute_strategy():
     """Execute the complete strategy step by step"""
     
@@ -118,6 +207,15 @@ def execute_strategy():
     
     # Step 3: Calculate indicators
     data = calculate_indicators(data, strategy_data)
+    
+    # Step 4: Generate signals
+    data = generate_signals(data, strategy_data)
+    
+    # Show the final DataFrame
+    print(f"\n📊 FINAL DATAFRAME:")
+    print(f"Columns: {list(data.columns)}")
+    print(f"\nLast 5 rows:")
+    print(data.tail())
     
     return strategy_data, data
 
