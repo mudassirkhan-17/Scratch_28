@@ -112,13 +112,10 @@ class PortfolioManager:
         return result
     
     def get_portfolio_value(self, current_price):
-        """Calculate current total portfolio value"""
-        if self.shares_owned > 0:  # Long position
-            current_position_value = self.shares_owned * current_price
+        """Calculate current total portfolio value (real trading platform style)"""
+        if self.shares_owned != 0:  # Any position (long or short)
+            current_position_value = abs(self.shares_owned) * current_price
             return self.remaining + current_position_value
-        elif self.shares_owned < 0:  # Short position
-            current_position_liability = abs(self.shares_owned) * current_price
-            return self.remaining + self.buying_price - current_position_liability
         else:  # No position
             return self.final_cash if self.final_cash > 0 else self.invested_amount
     
