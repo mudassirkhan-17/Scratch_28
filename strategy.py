@@ -152,7 +152,36 @@ def generate_signals(data, strategy_data):
     
     return data
 
-def execute_long_strategy(data, strategy_data):
+def calculate_sl_tp_levels(sl_tp_config, entry_price, shares_owned, buying_price, position_type):
+    """Calculate Stop Loss and Take Profit levels based on configuration"""
+    if not sl_tp_config['enabled']:
+        return 0, 0  # No SL/TP
+    
+    if sl_tp_config['sl_type'] == 'percentage':
+        # Percentage-based SL/TP
+        if position_type == 'LONG':
+            stop_loss_price = entry_price * (1 - sl_tp_config['sl_value'])
+            take_profit_price = entry_price * (1 + sl_tp_config['tp_value'])
+        else:  # SHORT
+            stop_loss_price = entry_price * (1 + sl_tp_config['sl_value'])
+            take_profit_price = entry_price * (1 - sl_tp_config['tp_value'])
+    
+    else:  # dollar-based
+        # Dollar-based SL/TP
+        if position_type == 'LONG':
+            stop_loss_amount = buying_price - sl_tp_config['sl_value']
+            take_profit_amount = buying_price + sl_tp_config['tp_value']
+        else:  # SHORT
+            stop_loss_amount = buying_price + sl_tp_config['sl_value']
+            take_profit_amount = buying_price - sl_tp_config['tp_value']
+        
+        # Convert to per-share prices
+        stop_loss_price = stop_loss_amount / shares_owned
+        take_profit_price = take_profit_amount / shares_owned
+    
+    return stop_loss_price, take_profit_price
+
+def execute_long_strategy(data, strategy_data, sl_tp_config):
     """Step 5: Execute Long Entry/Exit Strategy - Using Your Exact Variables"""
     print(f"\nSTEP 5: Executing Long Entry/Exit Strategy...")
     
@@ -181,7 +210,7 @@ def execute_long_strategy(data, strategy_data):
         exit_signal = data['Exit_Signal'].iloc[i]
         
         # 🚨 SL/TP CHECK FIRST (highest priority risk management)
-        if shares_owned > 0:  # Only if we have long position
+        if shares_owned > 0 and sl_tp_config['enabled']:  # Only if we have long position and SL/TP enabled
             # Stop Loss Check (highest priority)
             if current_price <= stop_loss_price:
                 selling_price = shares_owned * current_price
@@ -251,14 +280,18 @@ def execute_long_strategy(data, strategy_data):
             
             # Set SL/TP levels after entry
             entry_price = current_price
-            stop_loss_price = entry_price * (1 - stop_loss_percent)
-            take_profit_price = entry_price * (1 + take_profit_percent)
+            stop_loss_price, take_profit_price = calculate_sl_tp_levels(
+                sl_tp_config, entry_price, shares_owned, buying_price, 'LONG'
+            )
             
             print(f"LONG ENTRY: Bought {shares_owned} shares at ${current_price:.2f}")
             print(f"  Money spent (buying_price): ${buying_price:,.2f}")
             print(f"  Money left in account (remaining): ${remaining:,.2f}")
-            print(f"  🚨 Stop Loss set at: ${stop_loss_price:.2f} (-{stop_loss_percent*100:.1f}%)")
-            print(f"  💰 Take Profit set at: ${take_profit_price:.2f} (+{take_profit_percent*100:.1f}%)")
+            if sl_tp_config['enabled']:
+                print(f"  🚨 Stop Loss set at: ${stop_loss_price:.2f}")
+                print(f"  💰 Take Profit set at: ${take_profit_price:.2f}")
+            else:
+                print(f"  ⚠️ No Stop Loss/Take Profit enabled")
             
             trades.append({
                 'type': 'BUY',
@@ -328,7 +361,7 @@ def execute_long_strategy(data, strategy_data):
     
     return data, trades
 
-def execute_short_strategy(data, strategy_data):
+def execute_short_strategy(data, strategy_data, sl_tp_config):
     """Step 5: Execute Short Entry/Exit Strategy - Using Your Exact Variables"""
     print(f"\nSTEP 5: Executing Short Entry/Exit Strategy...")
     
@@ -548,7 +581,7 @@ def execute_short_strategy(data, strategy_data):
     
     return data, trades
 
-def execute_reversal_strategy(data, strategy_data):
+def execute_reversal_strategy(data, strategy_data, sl_tp_config):
     """Step 5: Execute Long/Short Reversal Strategy - Always in Market"""
     print(f"\nSTEP 5: Executing Long/Short Reversal Strategy...")
     
@@ -974,6 +1007,11 @@ def execute_strategy():
     
     print(f"✅ Strategy inputs collected for {ticker}")
     
+    # Step 1.5: Get SL/TP Configuration
+    from inputs import get_sl_tp_configuration
+    sl_tp_config = get_sl_tp_configuration()
+    print(f"✅ SL/TP configuration: {sl_tp_config}")
+    
     # Step 2: Download market data
     print(f"\nSTEP 2: Downloading market data...")
     from inputs import download_and_prepare_data
@@ -994,11 +1032,11 @@ def execute_strategy():
     
     # Step 5: Execute Strategy based on user choice
     if strategy_type == "long":
-        data, trades = execute_long_strategy(data, strategy_data)
+        data, trades = execute_long_strategy(data, strategy_data, sl_tp_config)
     elif strategy_type == "short":
-        data, trades = execute_short_strategy(data, strategy_data)
+        data, trades = execute_short_strategy(data, strategy_data, sl_tp_config)
     else:  # reversal
-        data, trades = execute_reversal_strategy(data, strategy_data)
+        data, trades = execute_reversal_strategy(data, strategy_data, sl_tp_config)
     
     return strategy_data, data, trades
 

@@ -1313,3 +1313,108 @@ def get_multi_strategy_inputs():
         return None
     
     return ticker, period, interval, entry_conditions, exit_conditions, entry_logic, exit_logic
+
+def get_sl_tp_configuration():
+    """Get Stop Loss and Take Profit configuration from user"""
+    print("\n" + "="*50)
+    print("📊 STOP LOSS & TAKE PROFIT CONFIGURATION")
+    print("="*50)
+    
+    # Ask if user wants SL/TP
+    while True:
+        enable_sl_tp = input("Enable Stop Loss & Take Profit? (y/n): ").strip().lower()
+        if enable_sl_tp in ['y', 'yes']:
+            enable_sl_tp = True
+            break
+        elif enable_sl_tp in ['n', 'no']:
+            enable_sl_tp = False
+            break
+        else:
+            print("❌ Please enter 'y' or 'n'")
+    
+    if not enable_sl_tp:
+        return {
+            'enabled': False,
+            'sl_type': None,
+            'tp_type': None,
+            'sl_value': 0,
+            'tp_value': 0
+        }
+    
+    print("\n📋 Choose SL/TP Method:")
+    print("1. Percentage-based (e.g., 5% loss, 10% profit)")
+    print("2. Dollar-based (e.g., $100 loss, $200 profit)")
+    
+    while True:
+        try:
+            method = int(input("Select method (1 or 2): "))
+            if method in [1, 2]:
+                break
+            else:
+                print("❌ Please enter 1 or 2")
+        except ValueError:
+            print("❌ Please enter a valid number")
+    
+    if method == 1:
+        # Percentage-based
+        print("\n📊 PERCENTAGE-BASED SL/TP:")
+        
+        while True:
+            try:
+                sl_percent = float(input("Stop Loss percentage (e.g., 5 for 5%): "))
+                if 0 < sl_percent <= 100:
+                    break
+                else:
+                    print("❌ Please enter a percentage between 0 and 100")
+            except ValueError:
+                print("❌ Please enter a valid number")
+        
+        while True:
+            try:
+                tp_percent = float(input("Take Profit percentage (e.g., 10 for 10%): "))
+                if 0 < tp_percent <= 1000:
+                    break
+                else:
+                    print("❌ Please enter a percentage between 0 and 1000")
+            except ValueError:
+                print("❌ Please enter a valid number")
+        
+        return {
+            'enabled': True,
+            'sl_type': 'percentage',
+            'tp_type': 'percentage',
+            'sl_value': sl_percent / 100,  # Convert to decimal
+            'tp_value': tp_percent / 100   # Convert to decimal
+        }
+    
+    else:
+        # Dollar-based
+        print("\n💰 DOLLAR-BASED SL/TP:")
+        
+        while True:
+            try:
+                sl_dollars = float(input("Stop Loss dollar amount (e.g., 100 for $100 loss): $"))
+                if sl_dollars > 0:
+                    break
+                else:
+                    print("❌ Please enter a positive dollar amount")
+            except ValueError:
+                print("❌ Please enter a valid number")
+        
+        while True:
+            try:
+                tp_dollars = float(input("Take Profit dollar amount (e.g., 200 for $200 profit): $"))
+                if tp_dollars > 0:
+                    break
+                else:
+                    print("❌ Please enter a positive dollar amount")
+            except ValueError:
+                print("❌ Please enter a valid number")
+        
+        return {
+            'enabled': True,
+            'sl_type': 'dollar',
+            'tp_type': 'dollar',
+            'sl_value': sl_dollars,
+            'tp_value': tp_dollars
+        }
