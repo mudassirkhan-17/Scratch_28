@@ -15,6 +15,7 @@ class TradeExecutor:
         self.risk = RiskManager(sl_tp_config)
         self.trades = []
         
+        # portfolio, risk, trades
         print(f"Trade Executor initialized")
     
     def process_market_tick(self, current_price, entry_signal, exit_signal, strategy_type):

@@ -45,6 +45,57 @@ get_position_info() --> curent portoflio etc.
 
 calculate_total_return(self):--> initial cash, final value, total profit, total return percent
 
+RiskManager:
+
+init --> entry price, stop loss price, take profit price, position direction, 
+position buying price, position shares
+
+set_sl_tp_levels(self, entry_price, shares_owned, buying_price, position_type): --> set percent/dollar wise
+
+check_stop_loss(self, current_price): --> check stop loss etc
+
+check_take_profit(self, current_price):
+
+def check_liquidation(self, current_price, portfolio):  -> if threshold cross stop position
+
+get_liquidation_info(self, current_price, portfolio):
+
+get_sl_tp_info(self): --> etc
+
+reset_levels(self):--> it reset the reset_levels
+is_sl_tp_enabled(),has_position(self),format_sl_tp_display(self),
+
+get_risk_check_result(self, current_price, portfolio): --> check_liquidation(current_price, portfolio):
+--> check_stop_loss(current_price)-->check_take_profit(current_price) --> get check result is the main function
+action, position_type, entry_price, trigger_price,info --> which action to take -->sl/tp/liq
+
+
+Trade executor
+
+__init__(self, initial_cash, sl_tp_config): --> portfolio, risk, trades
+
+process_market_tick(self, current_price, entry_signal, exit_signal, strategy_type): -->check which conditions
+is met if liquidation then it will trigger function --> if sl/tp trigger there function
+
+if no risk action taken
+
+then check strategy type wether long short or execute_reversal_strategy
+
+_execute_liquidation(self, current_price, liquidation_info): --> exit_short_position() calls --> reset_levels()
+
+_execute_stop_loss(self, current_price, risk_result): --> risk_result --> long/short --> exit_short_position/long
+
+_execute_take_profit(self, current_price, risk_result):
+
+_process_long_signals(self, current_price, entry_signal, exit_signal):
+
+enter long position exit long position, based on signal or tp or sl
+
+_process_reversal_signals(self, current_price, entry_signal, exit_signal):
+
+get_portfolio_tracking_data(self, current_price):
+
+print_final_results(self):
 
 
 

@@ -19,6 +19,8 @@ class RiskManager:
         # Position tracking for liquidation
         self.position_buying_price = 0  # Money involved in position
         self.position_shares = 0        # Number of shares in position
+
+        # entry price, stop loss price, take profit price, position direction, position buying price, position shares
         
         print(f"Risk Manager initialized - SL/TP enabled: {self.sl_tp_config['enabled']}")
         if self.sl_tp_config['enabled']:
@@ -186,6 +188,6 @@ class RiskManager:
                 'entry_price': self.entry_price,
                 'trigger_price': self.take_profit_price
             }
-        
+        # action, position_type, entry_price, trigger_price
         # No risk action needed
         return {'action': 'NONE'}
