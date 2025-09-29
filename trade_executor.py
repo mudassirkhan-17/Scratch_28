@@ -325,8 +325,8 @@ class TradeExecutor:
         
         return results
     
-    def print_final_results(self):
-        """Print final trading summary"""
+    def print_final_results(self, data=None):
+        """Print comprehensive trading summary with advanced metrics"""
         results = self.get_final_results()
         
         print(f"\n📊 FINAL RESULTS:")
@@ -343,3 +343,52 @@ class TradeExecutor:
             print(f"Final Position: SHORT {abs(self.portfolio.shares_owned)} shares")
         else:
             print(f"Final Position: FLAT (no position)")
+        
+        # Calculate and display advanced metrics if data is provided
+        if data is not None and len(self.trades) > 0:
+            try:
+                from metrics import calculate_advanced_metrics
+                
+                # Debug: Check portfolio values
+                if 'Portfolio_Value' in data.columns:
+                    portfolio_values = data['Portfolio_Value'].dropna()
+                    print(f"\n🔍 DEBUG: Portfolio values range: ${portfolio_values.min():,.2f} to ${portfolio_values.max():,.2f}")
+                    print(f"🔍 DEBUG: Portfolio data points: {len(portfolio_values)}")
+                
+                metrics = calculate_advanced_metrics(self.portfolio, data, self.trades)
+                
+                if metrics:  # Only display if metrics were calculated successfully
+                    print(f"\n📈 ADVANCED PERFORMANCE METRICS:")
+                    print(f"{'='*50}")
+                    
+                    # Risk-Adjusted Ratios
+                    print(f"📊 RISK-ADJUSTED RATIOS:")
+                    print(f"  Sharpe Ratio: {metrics.get('sharpe_ratio', 0):.3f}")
+                    print(f"  Sortino Ratio: {metrics.get('sortino_ratio', 0):.3f}")
+                    print(f"  Calmar Ratio: {metrics.get('calmar_ratio', 0):.3f}")
+                    
+                    # Risk Metrics
+                    print(f"\n📉 RISK METRICS:")
+                    print(f"  Max Drawdown: {metrics.get('max_drawdown', 0):.2f}%")
+                    print(f"  Volatility: {metrics.get('volatility', 0):.2f}%")
+                    
+                    # Return Metrics  
+                    print(f"\n💰 RETURN METRICS:")
+                    print(f"  Annual Return: {metrics.get('annual_return', 0):.2f}%")
+                    print(f"  Cumulative Return: {metrics.get('cumulative_return', 0):.2f}%")
+                    
+                    # Trade Performance
+                    print(f"\n🎯 TRADE PERFORMANCE:")
+                    print(f"  Win Rate: {metrics.get('win_rate', 0):.1f}%")
+                    print(f"  Profit Factor: {metrics.get('profit_factor', 0):.2f}")
+                    print(f"  Total Trades: {metrics.get('total_trades', 0)}")
+                    
+                    # Trading Period
+                    print(f"\n📅 TRADING PERIOD:")
+                    print(f"  Years Traded: {metrics.get('years_traded', 0):.2f}")
+                    print(f"  Trading Days: {metrics.get('trading_days', 0)}")
+                    
+            except ImportError:
+                print(f"\n⚠️ Advanced metrics not available (metrics.py not found)")
+            except Exception as e:
+                print(f"\n⚠️ Error calculating advanced metrics: {e}")

@@ -173,8 +173,8 @@ def execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_
         for key, value in tracking.items():
             data.loc[data.index[i], key] = value
     
-    # Print final results
-    executor.print_final_results()
+    # Print final results with advanced metrics
+    executor.print_final_results(data)
     return data, executor.trades
 
 def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
@@ -197,8 +197,8 @@ def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per
         for key, value in tracking.items():
             data.loc[data.index[i], key] = value
     
-    # Print final results
-    executor.print_final_results()
+    # Print final results with advanced metrics
+    executor.print_final_results(data)
     return data, executor.trades
 
 def execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
@@ -222,8 +222,8 @@ def execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital, 
         for key, value in tracking.items():
             data.loc[data.index[i], key] = value
     
-    # Print final results
-    executor.print_final_results()
+    # Print final results with advanced metrics
+    executor.print_final_results(data)
     return data, executor.trades
 
 def execute_strategy():

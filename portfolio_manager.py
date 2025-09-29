@@ -125,7 +125,7 @@ class PortfolioManager:
             current_position_value = abs(self.shares_owned) * current_price
             return self.remaining + current_position_value
         else:  # No position
-            return self.final_cash if self.final_cash > 0 else self.invested_amount
+            return self.final_cash if self.final_cash > 0 else self.initial_cash
     
     def get_position_value(self, current_price):
         """Get current position value (for tracking)"""

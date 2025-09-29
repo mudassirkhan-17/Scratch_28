@@ -6,7 +6,24 @@ i.e candle comparision --> generate_signals() --> they generate signals and give
 --> entry long()  -> entry short () --> formula mentioned below. --> get_strategy_direction() --> to
 ask wether to long or short --> execute_reversal_strategy() --> now we got everything so far. -->
 we added three files. --> portfoliomanager, risk manager, trade executor. refer pt1 for reference
+--> get_total_capital() --> 
 
+CORRECTED FLOW:
+execute_strategy() --> get_strategy_direction() --> get_inputs() --> get_total_capital() --> 
+get_per_trade_allocation() --> download_data() --> calculate_indicators() --> 
+generate_signals() --> execute_long_strategy() OR execute_short_strategy() OR execute_reversal_strategy()
+
+DETAILED BREAKDOWN:
+1. execute_strategy() - Main orchestrator function
+2. get_strategy_direction() - Ask user: Long/Short/Reversal strategy
+3. get_inputs() - Collect strategy parameters (ticker, indicators, comparisons)
+4. get_total_capital() - Ask user total portfolio capital
+5. get_per_trade_allocation() - Ask user per-trade allocation (% or $)
+6. get_sl_tp_configuration() - Ask user SL/TP and trailing SL settings
+7. download_data() - Download market data from yfinance
+8. calculate_indicators() - Compute technical indicators (SMA, EMA, RSI, etc.)
+9. generate_signals() - Create buy/sell signals with candle comparison logic
+10. execute_[strategy_type]() - Execute trades based on user's chosen strategy type
 
 
 
