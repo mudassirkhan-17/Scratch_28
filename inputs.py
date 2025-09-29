@@ -1344,7 +1344,10 @@ def get_sl_tp_configuration():
             'sl_type': None,
             'tp_type': None,
             'sl_value': 0,
-            'tp_value': 0
+            'tp_value': 0,
+            'trailing_sl_enabled': False,
+            'trailing_sl_type': None,
+            'trailing_sl_value': 0
         }
     
     print("\n📋 Choose SL/TP Method:")
@@ -1388,12 +1391,18 @@ def get_sl_tp_configuration():
             except ValueError:
                 print("❌ Please enter a valid number")
         
+        # Ask about trailing stop loss
+        trailing_config = get_trailing_sl_configuration()
+        
         return {
             'enabled': True,
             'sl_type': 'percentage',
             'tp_type': 'percentage',
             'sl_value': sl_percent / 100,  # Convert to decimal
-            'tp_value': tp_percent / 100   # Convert to decimal
+            'tp_value': tp_percent / 100,   # Convert to decimal
+            'trailing_sl_enabled': trailing_config['enabled'],
+            'trailing_sl_type': trailing_config['type'],
+            'trailing_sl_value': trailing_config['value']
         }
     
     else:
@@ -1422,12 +1431,106 @@ def get_sl_tp_configuration():
             except ValueError:
                 print("❌ Please enter a valid number")
         
+        # Ask about trailing stop loss
+        trailing_config = get_trailing_sl_configuration()
+        
         return {
             'enabled': True,
             'sl_type': 'dollar',
             'tp_type': 'dollar',
             'sl_value': sl_dollars,
-            'tp_value': tp_dollars
+            'tp_value': tp_dollars,
+            'trailing_sl_enabled': trailing_config['enabled'],
+            'trailing_sl_type': trailing_config['type'],
+            'trailing_sl_value': trailing_config['value']
+        }
+
+def get_trailing_sl_configuration():
+    """Get trailing stop loss configuration from user"""
+    print("\n" + "="*50)
+    print("🔄 TRAILING STOP LOSS CONFIGURATION")
+    print("="*50)
+    print("💡 Trailing SL moves UP with profitable trades, locks in gains!")
+    
+    # Ask if user wants trailing SL
+    while True:
+        enable_trailing = input("Enable Trailing Stop Loss? (y/n) [default: n]: ").strip().lower()
+        if not enable_trailing:  # Default to 'n' if empty
+            enable_trailing = 'n'
+        if enable_trailing in ['y', 'yes']:
+            enable_trailing = True
+            break
+        elif enable_trailing in ['n', 'no']:
+            enable_trailing = False
+            break
+        else:
+            print("❌ Please enter 'y' or 'n'")
+    
+    if not enable_trailing:
+        return {
+            'enabled': False,
+            'type': None,
+            'value': 0
+        }
+    
+    # Get trailing method
+    print("\n📊 Choose Trailing SL Method:")
+    print("1. Percentage-based (e.g., 3% trailing)")
+    print("2. Dollar-based (e.g., $50 trailing)")
+    
+    while True:
+        try:
+            method_input = input("Select method (1 or 2) [default: 1]: ").strip()
+            method = int(method_input or "1")
+            if method in [1, 2]:
+                break
+            else:
+                print("❌ Please enter 1 or 2")
+        except ValueError:
+            print("❌ Please enter a valid number")
+    
+    if method == 1:
+        # Percentage-based trailing
+        print("\n📊 PERCENTAGE-BASED TRAILING SL:")
+        
+        while True:
+            try:
+                percent_input = input("Trailing percentage (e.g., 3 for 3%) [default: 3]: ").strip()
+                trailing_percent = float(percent_input or "3")
+                if 0 < trailing_percent <= 50:
+                    print(f"✅ Trailing SL: {trailing_percent}% (moves with profitable trades)")
+                    break
+                else:
+                    print("❌ Please enter a percentage between 0 and 50")
+            except ValueError:
+                print("❌ Please enter a valid number")
+        
+        return {
+            'enabled': True,
+            'type': 'percentage',
+            'value': trailing_percent / 100  # Convert to decimal
+        }
+    
+    else:
+        # Dollar-based trailing
+        print("\n💰 DOLLAR-BASED TRAILING SL:")
+        
+        while True:
+            try:
+                amount_input = input("Trailing amount [default: $30]: $").strip()
+                trailing_amount = float(amount_input or "30")
+                if trailing_amount > 0:
+                    print(f"✅ Trailing SL: ${trailing_amount:.2f} (moves with profitable trades)")
+                    break
+                else:
+                    print("❌ Please enter a positive dollar amount")
+            except ValueError:
+                print("❌ Please enter a valid number")
+        
+        return {
+            'enabled': True,
+            'type': 'dollar',
+            'value': trailing_amount
         }
 
 def get_per_trade_allocation(total_capital):

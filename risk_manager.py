@@ -16,6 +16,14 @@ class RiskManager:
         self.take_profit_price = 0    # TP trigger price
         self.position_direction = ""  # "LONG", "SHORT", or ""
         
+        # Trailing Stop Loss variables
+        self.trailing_sl_enabled = sl_tp_config.get('trailing_sl_enabled', False)
+        self.trailing_sl_type = sl_tp_config.get('trailing_sl_type', None)
+        self.trailing_sl_value = sl_tp_config.get('trailing_sl_value', 0)
+        self.trailing_sl_price = 0    # Current trailing SL trigger price
+        self.highest_price = 0        # Highest price since entry (for long positions)
+        self.lowest_price = 0         # Lowest price since entry (for short positions)
+        
         # Position tracking for liquidation
         self.position_buying_price = 0  # Money involved in position
         self.position_shares = 0        # Number of shares in position
@@ -28,6 +36,12 @@ class RiskManager:
                 print(f"  Mode: Percentage-based ({self.sl_tp_config['sl_value']*100:.1f}% SL, {self.sl_tp_config['tp_value']*100:.1f}% TP)")
             else:
                 print(f"  Mode: Dollar-based (${self.sl_tp_config['sl_value']:.0f} SL, ${self.sl_tp_config['tp_value']:.0f} TP)")
+            
+            if self.trailing_sl_enabled:
+                if self.trailing_sl_type == 'percentage':
+                    print(f"  🔄 Trailing SL: {self.trailing_sl_value*100:.1f}% (moves with profits)")
+                else:
+                    print(f"  🔄 Trailing SL: ${self.trailing_sl_value:.0f} (moves with profits)")
     
     def set_sl_tp_levels(self, entry_price, shares_owned, buying_price, position_type):
         """Set Stop Loss and Take Profit levels after position entry"""
