@@ -165,6 +165,13 @@ def execute_long_strategy(data, strategy_data):
     final_cash = 0  # Money from selling
     trades = []
     
+    # SL/TP variables
+    entry_price = 0  # Price per share we bought at
+    stop_loss_price = 0  # SL trigger price
+    take_profit_price = 0  # TP trigger price
+    stop_loss_percent = 0.05  # 5% stop loss
+    take_profit_percent = 0.10  # 10% take profit
+    
     print(f"Starting with: ${initial_cash:,.2f}")
     print(f"Available to invest: ${invested_amount:,.2f} (100%)")
     
@@ -172,6 +179,66 @@ def execute_long_strategy(data, strategy_data):
         current_price = data['Close'].iloc[i]
         entry_signal = data['Entry_Signal'].iloc[i]
         exit_signal = data['Exit_Signal'].iloc[i]
+        
+        # 🚨 SL/TP CHECK FIRST (highest priority risk management)
+        if shares_owned > 0:  # Only if we have long position
+            # Stop Loss Check (highest priority)
+            if current_price <= stop_loss_price:
+                selling_price = shares_owned * current_price
+                final_cash = remaining + buying_price + (selling_price - buying_price)
+                profit_loss = selling_price - buying_price
+                
+                print(f"🚨 STOP LOSS: Sold {shares_owned} shares at ${current_price:.2f}")
+                print(f"  Entry price: ${entry_price:.2f}")
+                print(f"  Loss: ${profit_loss:,.2f}")
+                print(f"  Final cash: ${final_cash:,.2f}")
+                
+                trades.append({
+                    'type': 'STOP_LOSS',
+                    'price': current_price,
+                    'shares': shares_owned,
+                    'profit_loss': profit_loss,
+                    'entry_price': entry_price
+                })
+                
+                # Reset for next trade
+                invested_amount = final_cash
+                remaining = 0
+                shares_owned = 0
+                buying_price = 0
+                entry_price = 0
+                stop_loss_price = 0
+                take_profit_price = 0
+                continue  # Skip normal signals
+            
+            # Take Profit Check (second priority)
+            elif current_price >= take_profit_price:
+                selling_price = shares_owned * current_price
+                final_cash = remaining + buying_price + (selling_price - buying_price)
+                profit_loss = selling_price - buying_price
+                
+                print(f"💰 TAKE PROFIT: Sold {shares_owned} shares at ${current_price:.2f}")
+                print(f"  Entry price: ${entry_price:.2f}")
+                print(f"  Profit: ${profit_loss:,.2f}")
+                print(f"  Final cash: ${final_cash:,.2f}")
+                
+                trades.append({
+                    'type': 'TAKE_PROFIT',
+                    'price': current_price,
+                    'shares': shares_owned,
+                    'profit_loss': profit_loss,
+                    'entry_price': entry_price
+                })
+                
+                # Reset for next trade
+                invested_amount = final_cash
+                remaining = 0
+                shares_owned = 0
+                buying_price = 0
+                entry_price = 0
+                stop_loss_price = 0
+                take_profit_price = 0
+                continue  # Skip normal signals
         
         # LONG ENTRY: Buy shares when signal says BUY
         if entry_signal and shares_owned == 0:
@@ -182,9 +249,16 @@ def execute_long_strategy(data, strategy_data):
             remaining = initial_cash - buying_price  # Money left in account
             final_cash = 0  # Reset for calculation
             
+            # Set SL/TP levels after entry
+            entry_price = current_price
+            stop_loss_price = entry_price * (1 - stop_loss_percent)
+            take_profit_price = entry_price * (1 + take_profit_percent)
+            
             print(f"LONG ENTRY: Bought {shares_owned} shares at ${current_price:.2f}")
             print(f"  Money spent (buying_price): ${buying_price:,.2f}")
             print(f"  Money left in account (remaining): ${remaining:,.2f}")
+            print(f"  🚨 Stop Loss set at: ${stop_loss_price:.2f} (-{stop_loss_percent*100:.1f}%)")
+            print(f"  💰 Take Profit set at: ${take_profit_price:.2f} (+{take_profit_percent*100:.1f}%)")
             
             trades.append({
                 'type': 'BUY',
@@ -264,6 +338,13 @@ def execute_short_strategy(data, strategy_data):
     final_cash = 0  # Money from selling
     trades = []
     
+    # SL/TP variables for SHORT
+    entry_price = 0  # Price per share we shorted at
+    stop_loss_price = 0  # SL trigger price (above entry for shorts)
+    take_profit_price = 0  # TP trigger price (below entry for shorts)
+    stop_loss_percent = 0.05  # 5% stop loss
+    take_profit_percent = 0.10  # 10% take profit
+    
     print(f"Starting with: ${initial_cash:,.2f}")
     print(f"Available to invest: ${invested_amount:,.2f} (100%)")
     
@@ -272,7 +353,69 @@ def execute_short_strategy(data, strategy_data):
         entry_signal = data['Entry_Signal'].iloc[i]
         exit_signal = data['Exit_Signal'].iloc[i]
         
-        # 🚨 LIQUIDATION CHECK FIRST: Check if we need to force close position
+        # 🚨 SL/TP CHECK FIRST (highest priority risk management)
+        if shares_owned < 0:  # Only if we have short position
+            # Stop Loss Check (highest priority) - price goes UP for shorts
+            if current_price >= stop_loss_price:
+                shares_to_cover = abs(shares_owned)
+                selling_price = shares_to_cover * current_price
+                final_cash = remaining + buying_price + (buying_price - selling_price)
+                profit_loss = buying_price - selling_price
+                
+                print(f"🚨 STOP LOSS: Covered {shares_to_cover} shorts at ${current_price:.2f}")
+                print(f"  Entry price: ${entry_price:.2f}")
+                print(f"  Loss: ${profit_loss:,.2f}")
+                print(f"  Final cash: ${final_cash:,.2f}")
+                
+                trades.append({
+                    'type': 'STOP_LOSS_SHORT',
+                    'price': current_price,
+                    'shares': shares_to_cover,
+                    'profit_loss': profit_loss,
+                    'entry_price': entry_price
+                })
+                
+                # Reset for next trade
+                invested_amount = final_cash
+                remaining = 0
+                shares_owned = 0
+                buying_price = 0
+                entry_price = 0
+                stop_loss_price = 0
+                take_profit_price = 0
+                continue  # Skip normal signals
+            
+            # Take Profit Check (second priority) - price goes DOWN for shorts
+            elif current_price <= take_profit_price:
+                shares_to_cover = abs(shares_owned)
+                selling_price = shares_to_cover * current_price
+                final_cash = remaining + buying_price + (buying_price - selling_price)
+                profit_loss = buying_price - selling_price
+                
+                print(f"💰 TAKE PROFIT: Covered {shares_to_cover} shorts at ${current_price:.2f}")
+                print(f"  Entry price: ${entry_price:.2f}")
+                print(f"  Profit: ${profit_loss:,.2f}")
+                print(f"  Final cash: ${final_cash:,.2f}")
+                
+                trades.append({
+                    'type': 'TAKE_PROFIT_SHORT',
+                    'price': current_price,
+                    'shares': shares_to_cover,
+                    'profit_loss': profit_loss,
+                    'entry_price': entry_price
+                })
+                
+                # Reset for next trade
+                invested_amount = final_cash
+                remaining = 0
+                shares_owned = 0
+                buying_price = 0
+                entry_price = 0
+                stop_loss_price = 0
+                take_profit_price = 0
+                continue  # Skip normal signals
+        
+        # 🚨 LIQUIDATION CHECK (third priority): Check if we need to force close position
         if shares_owned < 0:  # Only check if we have a short position
             shorting_price = buying_price  # Money received from shorting (your variable)
             buying_back = abs(shares_owned) * current_price  # Cost to cover position
@@ -319,9 +462,16 @@ def execute_short_strategy(data, strategy_data):
             remaining = initial_cash - buying_price  # Money left in account
             final_cash = 0  # Reset for calculation
             
+            # Set SL/TP levels after short entry (opposite of long)
+            entry_price = current_price
+            stop_loss_price = entry_price * (1 + stop_loss_percent)  # Above entry for shorts
+            take_profit_price = entry_price * (1 - take_profit_percent)  # Below entry for shorts
+            
             print(f"SHORT ENTRY: Sold {max_shares} shares at ${current_price:.2f}")
             print(f"  Money received (buying_price): ${buying_price:,.2f}")
             print(f"  Leftover investment money (remaining): ${remaining:,.2f}")
+            print(f"  🚨 Stop Loss set at: ${stop_loss_price:.2f} (+{stop_loss_percent*100:.1f}%)")
+            print(f"  💰 Take Profit set at: ${take_profit_price:.2f} (-{take_profit_percent*100:.1f}%)")
             
             trades.append({
                 'type': 'SHORT',
