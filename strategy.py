@@ -17,22 +17,22 @@ def calculate_indicators(data, strategy_data):
     from indicators import calculate_indicator
     from comparision_types import ComparisonType
     
-    # Extract indicator info from strategy_data
-    entry_comp1_type = strategy_data[3]
-    entry_comp1_name = strategy_data[4]
-    entry_comp1_params = strategy_data[5]
+    # Extract indicator info from strategy_data (adjusted for per_trade_config at index 4)
+    entry_comp1_type = strategy_data[5]
+    entry_comp1_name = strategy_data[6]
+    entry_comp1_params = strategy_data[7]
     
-    entry_comp2_type = strategy_data[6]
-    entry_comp2_name = strategy_data[7]
-    entry_comp2_params = strategy_data[8]
+    entry_comp2_type = strategy_data[8]
+    entry_comp2_name = strategy_data[9]
+    entry_comp2_params = strategy_data[10]
     
-    exit_comp1_type = strategy_data[9]
-    exit_comp1_name = strategy_data[10]
-    exit_comp1_params = strategy_data[11]
+    exit_comp1_type = strategy_data[11]
+    exit_comp1_name = strategy_data[12]
+    exit_comp1_params = strategy_data[13]
     
-    exit_comp2_type = strategy_data[12]
-    exit_comp2_name = strategy_data[13]
-    exit_comp2_params = strategy_data[14]
+    exit_comp2_type = strategy_data[14]
+    exit_comp2_name = strategy_data[15]
+    exit_comp2_params = strategy_data[16]
     
     # Calculate indicators for entry comparison 1
     if entry_comp1_type == ComparisonType.INDICATOR:
@@ -69,28 +69,28 @@ def generate_signals(data, strategy_data):
     from comparision_types import ComparisonType
     import comparisons as comp
     
-    # Extract all strategy info
-    entry_comp1_type = strategy_data[3]
-    entry_comp1_name = strategy_data[4] 
-    entry_comp1_params = strategy_data[5]
-    entry_comp2_type = strategy_data[6]
-    entry_comp2_name = strategy_data[7]
-    entry_comp2_params = strategy_data[8]
+    # Extract all strategy info (adjusted for per_trade_config at index 4)
+    entry_comp1_type = strategy_data[5]
+    entry_comp1_name = strategy_data[6] 
+    entry_comp1_params = strategy_data[7]
+    entry_comp2_type = strategy_data[8]
+    entry_comp2_name = strategy_data[9]
+    entry_comp2_params = strategy_data[10]
     
-    exit_comp1_type = strategy_data[9]
-    exit_comp1_name = strategy_data[10]
-    exit_comp1_params = strategy_data[11]
-    exit_comp2_type = strategy_data[12]
-    exit_comp2_name = strategy_data[13]
-    exit_comp2_params = strategy_data[14]
+    exit_comp1_type = strategy_data[11]
+    exit_comp1_name = strategy_data[12]
+    exit_comp1_params = strategy_data[13]
+    exit_comp2_type = strategy_data[14]
+    exit_comp2_name = strategy_data[15]
+    exit_comp2_params = strategy_data[16]
     
-    entry_strategy = strategy_data[15]
-    exit_strategy = strategy_data[16]
+    entry_strategy = strategy_data[17]
+    exit_strategy = strategy_data[18]
     
-    entry_comp1_candles_ago = strategy_data[17]
-    entry_comp2_candles_ago = strategy_data[18]
-    exit_comp1_candles_ago = strategy_data[19]
-    exit_comp2_candles_ago = strategy_data[20]
+    entry_comp1_candles_ago = strategy_data[19]
+    entry_comp2_candles_ago = strategy_data[20]
+    exit_comp1_candles_ago = strategy_data[21]
+    exit_comp2_candles_ago = strategy_data[22]
     
     # Add shifted columns to data for comparison functions
     if entry_comp1_type == ComparisonType.INDICATOR:
@@ -153,12 +153,12 @@ def generate_signals(data, strategy_data):
     return data
 
 
-def execute_long_strategy(data, strategy_data, sl_tp_config, total_capital):
+def execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
     """Step 5: Execute Long Entry/Exit Strategy - Modular Version"""
     print(f"\nSTEP 5: Executing Long Entry/Exit Strategy...")
     
     from trade_executor import TradeExecutor
-    executor = TradeExecutor(total_capital, sl_tp_config)
+    executor = TradeExecutor(total_capital, sl_tp_config, per_trade_config)
     
     for i in range(len(data)):
         current_price = data['Close'].iloc[i]
@@ -177,12 +177,12 @@ def execute_long_strategy(data, strategy_data, sl_tp_config, total_capital):
     executor.print_final_results()
     return data, executor.trades
 
-def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital):
+def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
     """Step 5: Execute Short Entry/Exit Strategy - Modular Version"""
     print(f"\nSTEP 5: Executing Short Entry/Exit Strategy...")
     
     from trade_executor import TradeExecutor
-    executor = TradeExecutor(total_capital, sl_tp_config)
+    executor = TradeExecutor(total_capital, sl_tp_config, per_trade_config)
     
     for i in range(len(data)):
         current_price = data['Close'].iloc[i]
@@ -201,13 +201,13 @@ def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital):
     executor.print_final_results()
     return data, executor.trades
 
-def execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital):
+def execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
     """Step 5: Execute Long/Short Reversal Strategy - Modular Version"""
     print(f"\nSTEP 5: Executing Long/Short Reversal Strategy...")
     print("🔄 REVERSAL STRATEGY: Always in market - Entry=Long, Exit=Short")
     
     from trade_executor import TradeExecutor
-    executor = TradeExecutor(total_capital, sl_tp_config)
+    executor = TradeExecutor(total_capital, sl_tp_config, per_trade_config)
     
     for i in range(len(data)):
         current_price = data['Close'].iloc[i]
@@ -282,9 +282,11 @@ def execute_strategy():
     period = strategy_data[1] 
     interval = strategy_data[2]
     total_capital = strategy_data[3]
+    per_trade_config = strategy_data[4]
     
     print(f"✅ Strategy inputs collected for {ticker}")
     print(f"💰 Total Capital: ${total_capital:,.2f}")
+    print(f"📊 Per Trade: ${per_trade_config['amount_per_trade']:,.2f} ({per_trade_config['percentage']:.1f}% allocation)")
     
     # Step 1.5: Get SL/TP Configuration
     from inputs import get_sl_tp_configuration
@@ -311,11 +313,11 @@ def execute_strategy():
     
     # Step 5: Execute Strategy based on user choice
     if strategy_type == "long":
-        data, trades = execute_long_strategy(data, strategy_data, sl_tp_config, total_capital)
+        data, trades = execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
     elif strategy_type == "short":
-        data, trades = execute_short_strategy(data, strategy_data, sl_tp_config, total_capital)
+        data, trades = execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
     else:  # reversal
-        data, trades = execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital)
+        data, trades = execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
     
     return strategy_data, data, trades
 

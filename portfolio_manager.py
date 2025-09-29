@@ -6,18 +6,26 @@ Using your exact variable names and formulas
 class PortfolioManager:
     """Manages portfolio state including cash, positions, and calculations"""
     
-    def __init__(self, initial_cash=1000):
-        """Initialize portfolio with starting cash"""
+    def __init__(self, initial_cash=1000, per_trade_config=None):
+        """Initialize portfolio with starting cash and per-trade allocation"""
         # Your exact variables
         self.initial_cash = initial_cash           # Money we start with
-        self.invested_amount = initial_cash * 1.0  # Available for investment (100%)
+        
+        # Per-trade allocation setup
+        if per_trade_config:
+            self.invested_amount = per_trade_config['amount_per_trade']  # Amount per trade
+            self.allocation_percentage = per_trade_config['percentage']   # Percentage for display
+        else:
+            self.invested_amount = initial_cash * 1.0  # Fallback: 100% (old behavior)
+            self.allocation_percentage = 100.0
+            
         self.remaining = 0                         # Unused investment money
         self.shares_owned = 0                      # How many shares we own (positive=long, negative=short)
         self.buying_price = 0                      # Actual money spent/received
         self.final_cash = 0                        # Money from selling/covering
         
         print(f"Portfolio initialized with: ${self.initial_cash:,.2f}")
-        print(f"Available to invest: ${self.invested_amount:,.2f} (100%)")
+        print(f"Available to invest: ${self.invested_amount:,.2f} ({self.allocation_percentage:.1f}%)")
     
     def enter_long_position(self, current_price):
         """Enter a long position - buy shares"""

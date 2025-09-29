@@ -9,9 +9,9 @@ from risk_manager import RiskManager
 class TradeExecutor:
     """Executes trades and manages the interaction between portfolio and risk systems"""
     
-    def __init__(self, initial_cash, sl_tp_config):
+    def __init__(self, initial_cash, sl_tp_config, per_trade_config=None):
         """Initialize trade executor with portfolio and risk managers"""
-        self.portfolio = PortfolioManager(initial_cash)
+        self.portfolio = PortfolioManager(initial_cash, per_trade_config)
         self.risk = RiskManager(sl_tp_config)
         self.trades = []
         

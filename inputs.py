@@ -36,6 +36,7 @@ def get_strategy_inputs():
     
     # Capital Management
     total_capital = get_total_capital()
+    per_trade_config = get_per_trade_allocation(total_capital)
     
     print("\n--- ENTRY STRATEGY ---")
     
@@ -137,7 +138,7 @@ def get_strategy_inputs():
     # Get candles ago for exit comparison 2
     exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
     
-    return (ticker, period, interval, total_capital, entry_comp1_type, entry_comp1_name, entry_comp1_params,
+    return (ticker, period, interval, total_capital, per_trade_config, entry_comp1_type, entry_comp1_name, entry_comp1_params,
             entry_comp2_type, entry_comp2_name, entry_comp2_params,
             exit_comp1_type, exit_comp1_name, exit_comp1_params,
             exit_comp2_type, exit_comp2_name, exit_comp2_params,
@@ -1427,4 +1428,77 @@ def get_sl_tp_configuration():
             'tp_type': 'dollar',
             'sl_value': sl_dollars,
             'tp_value': tp_dollars
+        }
+
+def get_per_trade_allocation(total_capital):
+    """Get per-trade allocation configuration from user"""
+    print("\n" + "="*50)
+    print("📊 PER-TRADE ALLOCATION CONFIGURATION")
+    print("="*50)
+    print(f"Total Capital: ${total_capital:,.2f}")
+    
+    # Get allocation method
+    print("\n💰 Choose Per-Trade Allocation Method:")
+    print("1. Percentage-based (e.g., 20% of total capital per trade)")
+    print("2. Fixed dollar amount (e.g., $2,000 per trade)")
+    
+    while True:
+        try:
+            method_input = input("Select method (1 or 2) [default: 1]: ").strip()
+            method = int(method_input or "1")
+            if method in [1, 2]:
+                break
+            else:
+                print("❌ Please enter 1 or 2")
+        except ValueError:
+            print("❌ Please enter a valid number")
+    
+    if method == 1:
+        # Percentage-based allocation
+        print(f"\n📊 PERCENTAGE-BASED ALLOCATION:")
+        print(f"Total Capital: ${total_capital:,.2f}")
+        
+        while True:
+            try:
+                percent_input = input("Percentage per trade (e.g., 20 for 20%) [default: 20]: ").strip()
+                percent_per_trade = float(percent_input or "20")
+                if 0 < percent_per_trade <= 100:
+                    amount_per_trade = total_capital * (percent_per_trade / 100)
+                    print(f"✅ Per trade allocation: ${amount_per_trade:,.2f} ({percent_per_trade}% of ${total_capital:,.2f})")
+                    break
+                else:
+                    print("❌ Please enter a percentage between 0 and 100")
+            except ValueError:
+                print("❌ Please enter a valid number")
+        
+        return {
+            'method': 'percentage',
+            'percentage': percent_per_trade,
+            'amount_per_trade': amount_per_trade,
+            'total_capital': total_capital
+        }
+    
+    else:
+        # Fixed dollar amount
+        print(f"\n💰 FIXED DOLLAR ALLOCATION:")
+        print(f"Total Capital: ${total_capital:,.2f}")
+        
+        while True:
+            try:
+                amount_input = input("Fixed amount per trade [default: $2,000]: $").strip()
+                amount_per_trade = float(amount_input or "2000")
+                if 0 < amount_per_trade <= total_capital:
+                    percentage = (amount_per_trade / total_capital) * 100
+                    print(f"✅ Per trade allocation: ${amount_per_trade:,.2f} ({percentage:.1f}% of ${total_capital:,.2f})")
+                    break
+                else:
+                    print(f"❌ Please enter an amount between $0 and ${total_capital:,.2f}")
+            except ValueError:
+                print("❌ Please enter a valid number")
+        
+        return {
+            'method': 'fixed',
+            'percentage': (amount_per_trade / total_capital) * 100,
+            'amount_per_trade': amount_per_trade,
+            'total_capital': total_capital
         }
