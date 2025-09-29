@@ -84,12 +84,11 @@ def generate_signals(data, strategy_data):
     exit_comp2_name = strategy_data[15]
     exit_comp2_params = strategy_data[16]
     
-    entry_strategy = strategy_data[17]
-    exit_strategy = strategy_data[18]
-    
-    entry_comp1_candles_ago = strategy_data[19]
-    entry_comp2_candles_ago = strategy_data[20]
-    exit_comp1_candles_ago = strategy_data[21]
+    entry_comp1_candles_ago = strategy_data[17]
+    entry_strategy = strategy_data[18]
+    entry_comp2_candles_ago = strategy_data[19]
+    exit_comp1_candles_ago = strategy_data[20]
+    exit_strategy = strategy_data[21]
     exit_comp2_candles_ago = strategy_data[22]
     
     # Add shifted columns to data for comparison functions
