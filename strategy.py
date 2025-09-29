@@ -259,7 +259,7 @@ def execute_strategy():
     print("3. Multi Ticker")
     print("4. Multi Ticker Multi Strategy")
     
-    choice = input("Choose (1-4): ")
+    choice = input("Choose (1-4) [default: 1]: ").strip() or "1"
     
     if choice == "1":
         strategy_data = get_strategy_inputs()

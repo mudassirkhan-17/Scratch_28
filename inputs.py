@@ -1322,7 +1322,9 @@ def get_sl_tp_configuration():
     
     # Ask if user wants SL/TP
     while True:
-        enable_sl_tp = input("Enable Stop Loss & Take Profit? (y/n): ").strip().lower()
+        enable_sl_tp = input("Enable Stop Loss & Take Profit? (y/n) [default: y]: ").strip().lower()
+        if not enable_sl_tp:  # Default to 'y' if empty
+            enable_sl_tp = 'y'
         if enable_sl_tp in ['y', 'yes']:
             enable_sl_tp = True
             break
@@ -1347,7 +1349,8 @@ def get_sl_tp_configuration():
     
     while True:
         try:
-            method = int(input("Select method (1 or 2): "))
+            method_input = input("Select method (1 or 2) [default: 1]: ").strip()
+            method = int(method_input or "1")
             if method in [1, 2]:
                 break
             else:
@@ -1361,7 +1364,8 @@ def get_sl_tp_configuration():
         
         while True:
             try:
-                sl_percent = float(input("Stop Loss percentage (e.g., 5 for 5%): "))
+                sl_input = input("Stop Loss percentage (e.g., 5 for 5%) [default: 5]: ").strip()
+                sl_percent = float(sl_input or "5")
                 if 0 < sl_percent <= 100:
                     break
                 else:
@@ -1371,7 +1375,8 @@ def get_sl_tp_configuration():
         
         while True:
             try:
-                tp_percent = float(input("Take Profit percentage (e.g., 10 for 10%): "))
+                tp_input = input("Take Profit percentage (e.g., 10 for 10%) [default: 10]: ").strip()
+                tp_percent = float(tp_input or "10")
                 if 0 < tp_percent <= 1000:
                     break
                 else:
@@ -1393,7 +1398,8 @@ def get_sl_tp_configuration():
         
         while True:
             try:
-                sl_dollars = float(input("Stop Loss dollar amount (e.g., 100 for $100 loss): $"))
+                sl_input = input("Stop Loss dollar amount (e.g., 100 for $100 loss) [default: 50]: $").strip()
+                sl_dollars = float(sl_input or "50")
                 if sl_dollars > 0:
                     break
                 else:
@@ -1403,7 +1409,8 @@ def get_sl_tp_configuration():
         
         while True:
             try:
-                tp_dollars = float(input("Take Profit dollar amount (e.g., 200 for $200 profit): $"))
+                tp_input = input("Take Profit dollar amount (e.g., 200 for $200 profit) [default: 100]: $").strip()
+                tp_dollars = float(tp_input or "100")
                 if tp_dollars > 0:
                     break
                 else:
