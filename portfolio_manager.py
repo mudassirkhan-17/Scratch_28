@@ -45,7 +45,7 @@ class PortfolioManager:
         selling_price = self.shares_owned * current_price  # Money received from selling
         
         # Your Formula: final_cash = remaining + buying_price + (selling_price - buying_price)
-        self.final_cash = self.remaining + self.buying_price + (selling_price - buying_price)
+        self.final_cash = self.remaining + self.buying_price + (selling_price - self.buying_price)
         
         profit_loss = selling_price - self.buying_price  # Profit or loss on shares
         
