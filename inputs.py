@@ -4,7 +4,7 @@ from display import *
 from metrics import *
 from comparision_types import ComparisonType
 import yfinance as yf
-# from new12 import entry_multi_detector, exit_multi_detector
+# Multi-condition detector will be imported when needed
 
 
 
@@ -470,8 +470,36 @@ def get_indicator_params(indicator_name):
         upper = float(input(f"{indicator_name} Upper Threshold (default 60): ") or "60")
         lower = float(input(f"{indicator_name} Lower Threshold (default -60): ") or "-60")
         return (period1, period2, signal, upper, lower)
+    # Fixed broken indicators
+    elif indicator_name == "VPT":
+        ma_period = int(input(f"{indicator_name} MA Period (default 14): ") or "14")
+        threshold = float(input(f"{indicator_name} Threshold Percentage (default 0.01): ") or "0.01")
+        return (ma_period, threshold)
+    elif indicator_name == "VP":
+        period = int(input(f"{indicator_name} Period (default 14): ") or "14")
+        bin_size = int(input(f"{indicator_name} Bin Size (default 1): ") or "1")
+        value_area = float(input(f"{indicator_name} Value Area Percentage (default 0.7): ") or "0.7")
+        return (period, bin_size, value_area)
+    elif indicator_name == "VW_MACD":
+        fast = int(input(f"{indicator_name} Fast Period (default 12): ") or "12")
+        slow = int(input(f"{indicator_name} Slow Period (default 26): ") or "26")
+        signal = int(input(f"{indicator_name} Signal Period (default 9): ") or "9")
+        threshold = float(input(f"{indicator_name} Threshold (default 0): ") or "0")
+        return (fast, slow, signal, threshold)
+    elif indicator_name == "WOBV":
+        ma_period = int(input(f"{indicator_name} MA Period (default 20): ") or "20")
+        return (ma_period,)
+    elif indicator_name == "APZ":
+        period = int(input(f"{indicator_name} Period (default 20): ") or "20")
+        multiplier = float(input(f"{indicator_name} Multiplier (default 0.5): ") or "0.5")
+        baseline = float(input(f"{indicator_name} Baseline (default 0): ") or "0")
+        return (period, multiplier, baseline)
+    elif indicator_name == "MPP":
+        period = int(input(f"{indicator_name} Period (default 20): ") or "20")
+        threshold = float(input(f"{indicator_name} Threshold (default 0.01): ") or "0.01")
+        return (period, threshold)
     else:
-        period = int(input(f"{indicator_name} Period: "))
+        period = int(input(f"{indicator_name} Period (default 20): ") or "20")
         return (period,)
 
 def get_constant_value():
@@ -743,45 +771,12 @@ def get_multi_condition_inputs(condition_type, num_conditions):
     
     return conditions
 
-def detect_multi_strategy_signals(data, entry_conditions, exit_conditions, 
-                                 entry_logic='AND', exit_logic='AND'):
-    """Detect entry and exit signals using multiple conditions with AND/OR logic"""
-    
-    # Clear previous conditions
-    entry_multi_detector.clear_conditions()
-    exit_multi_detector.clear_conditions()
-    
-    # Set logic types
-    entry_multi_detector.set_logic_type(entry_logic)
-    exit_multi_detector.set_logic_type(exit_logic)
-    
-    # Add entry conditions
-    for condition in entry_conditions:
-        entry_multi_detector.add_condition(
-            condition['comp1_type'], condition['comp1_name'], condition['comp1_params'],
-            condition['comp2_type'], condition['comp2_name'], condition['comp2_params'],
-            condition['strategy'],
-            condition.get('comp1_candles_ago', 0), condition.get('comp2_candles_ago', 0)
-        )
-    
-    # Add exit conditions
-    for condition in exit_conditions:
-        exit_multi_detector.add_condition(
-            condition['comp1_type'], condition['comp1_name'], condition['comp1_params'],
-            condition['comp2_type'], condition['comp2_name'], condition['comp2_params'],
-            condition['strategy'],
-            condition.get('comp1_candles_ago', 0), condition.get('comp2_candles_ago', 0)
-        )
-    
-    # Detect entry signals
-    data, entry_condition_columns = entry_multi_detector.detect_all_conditions(data)
-    data['Entry_Signal'] = data['Combined_Signal']
-    
-    # Detect exit signals
-    data, exit_condition_columns = exit_multi_detector.detect_all_conditions(data)
-    data['Exit_Signal'] = data['Combined_Signal']
-    
-    return data, entry_condition_columns, exit_condition_columns
+# OLD FUNCTION - COMMENTED OUT (replaced by new multi-condition implementation)
+# def detect_multi_strategy_signals(data, entry_conditions, exit_conditions, 
+#                                  entry_logic='AND', exit_logic='AND'):
+#     """Detect entry and exit signals using multiple conditions with AND/OR logic"""
+#     # This function has been replaced by the new MultiConditionDetector approach
+#     pass
 
 def get_number_of_tickers():
     """Get number of tickers from user"""
@@ -1605,3 +1600,193 @@ def get_per_trade_allocation(total_capital):
             'amount_per_trade': amount_per_trade,
             'total_capital': total_capital
         }
+
+
+# ============================================================================
+# MULTI-CONDITION STRATEGY INPUT FUNCTIONS
+# ============================================================================
+
+def get_multi_condition_count():
+    """Ask user how many conditions they want for entry and exit"""
+    print("\n" + "="*60)
+    print("🔢 MULTI-CONDITION STRATEGY SETUP")
+    print("="*60)
+    print("💡 More conditions = Higher quality but fewer trades")
+    print("💡 Recommended: 2-3 conditions for most strategies")
+    
+    while True:
+        try:
+            count_input = input("How many conditions per signal? (2-5) [default: 2]: ").strip()
+            count = int(count_input or "2")
+            if 2 <= count <= 5:
+                print(f"✅ Will collect {count} conditions for entry and {count} for exit")
+                return count
+            else:
+                print("❌ Please enter a number between 2 and 5")
+        except ValueError:
+            print("❌ Please enter a valid number")
+
+def get_logic_type():
+    """Ask user whether to use AND or OR logic"""
+    print("\n" + "="*50)
+    print("🧠 CONDITION LOGIC TYPE")
+    print("="*50)
+    print("💡 AND Logic: ALL conditions must be True (stricter, fewer trades)")
+    print("💡 OR Logic: ANY condition can be True (flexible, more trades)")
+    
+    while True:
+        logic_input = input("Choose logic type (AND/OR) [default: AND]: ").strip().upper()
+        if not logic_input:
+            logic_input = "AND"
+        
+        if logic_input in ["AND", "OR"]:
+            print(f"✅ Using {logic_input} logic - ", end="")
+            if logic_input == "AND":
+                print("All conditions must be met")
+            else:
+                print("Any condition can trigger signal")
+            return logic_input
+        else:
+            print("❌ Please enter 'AND' or 'OR'")
+
+def get_single_condition_input(condition_num, signal_type="Entry"):
+    """
+    Get input for a single condition (reuses existing functions)
+    Returns condition data in format expected by MultiConditionDetector
+    """
+    print(f"\n--- {signal_type.upper()} CONDITION {condition_num} ---")
+    
+    # Get comparison 1 (left side)
+    print(f"\n{signal_type} Condition {condition_num} - Left Side:")
+    comp1_type = get_comparison_type()
+    
+    if comp1_type == "INDICATOR":
+        comp1_name = get_indicator_selection()
+        comp1_params = get_indicator_params(comp1_name)
+    elif comp1_type == "CONSTANT":
+        comp1_name = "CONSTANT"
+        comp1_value = get_constant_value()
+        comp1_params = (comp1_value,)
+    else:  # PRICE
+        comp1_name = "PRICE"
+        comp1_params = ()
+    
+    # Get candles ago for comparison 1
+    comp1_candles_ago = get_candles_ago(f"{signal_type} Condition {condition_num} - Left Side")
+    
+    # Get strategy/comparison type
+    strategy = get_strategy_selection()
+    
+    # Get comparison 2 (right side)
+    print(f"\n{signal_type} Condition {condition_num} - Right Side:")
+    comp2_type = get_comparison_type()
+    
+    if comp2_type == "INDICATOR":
+        comp2_name = get_indicator_selection()
+        comp2_params = get_indicator_params(comp2_name)
+    elif comp2_type == "CONSTANT":
+        comp2_name = "CONSTANT"
+        comp2_value = get_constant_value()
+        comp2_params = (comp2_value,)
+    else:  # PRICE
+        comp2_name = "PRICE"
+        comp2_params = ()
+    
+    # Get candles ago for comparison 2
+    comp2_candles_ago = get_candles_ago(f"{signal_type} Condition {condition_num} - Right Side")
+    
+    # Return structured condition data
+    condition_data = {
+        'comp1_type': comp1_type,
+        'comp1_name': comp1_name,
+        'comp1_params': comp1_params,
+        'comp1_candles_ago': comp1_candles_ago,
+        'strategy': strategy,
+        'comp2_type': comp2_type,
+        'comp2_name': comp2_name,
+        'comp2_params': comp2_params,
+        'comp2_candles_ago': comp2_candles_ago
+    }
+    
+    # Show summary
+    print(f"✅ Condition {condition_num}: {comp1_name} {strategy} {comp2_name}")
+    
+    return condition_data
+
+def get_multi_condition_strategy_inputs():
+    """
+    Main function to collect multi-condition strategy inputs
+    Returns all data needed for multi-condition strategy
+    """
+    print("\n" + "="*70)
+    print("🚀 MULTI-CONDITION STRATEGY INPUT COLLECTION")
+    print("="*70)
+    
+    # Get basic inputs (reuse existing functions)
+    ticker = input("Enter ticker symbol [default: AAPL]: ").upper().strip()
+    if not ticker: ticker = "AAPL"
+    period, interval = get_time_interval_inputs()
+    total_capital = get_total_capital()
+    per_trade_config = get_per_trade_allocation(total_capital)
+    
+    # Get multi-condition specific inputs
+    condition_count = get_multi_condition_count()
+    entry_logic = get_logic_type()
+    
+    print(f"\n🎯 COLLECTING {condition_count} ENTRY CONDITIONS:")
+    entry_conditions = []
+    for i in range(condition_count):
+        condition = get_single_condition_input(i + 1, "Entry")
+        entry_conditions.append(condition)
+    
+    print(f"\n🎯 COLLECTING {condition_count} EXIT CONDITIONS:")
+    # Ask if exit logic should be same as entry
+    print(f"\nCurrent entry logic: {entry_logic}")
+    use_same_logic = input("Use same logic for exit conditions? (y/n) [default: y]: ").strip().lower()
+    if use_same_logic in ['', 'y', 'yes']:
+        exit_logic = entry_logic
+    else:
+        print("\nExit logic:")
+        exit_logic = get_logic_type()
+    
+    exit_conditions = []
+    for i in range(condition_count):
+        condition = get_single_condition_input(i + 1, "Exit")
+        exit_conditions.append(condition)
+    
+    # Get SL/TP configuration
+    sl_tp_config = get_sl_tp_configuration()
+    
+    # Create summary
+    print(f"\n" + "="*70)
+    print("📋 MULTI-CONDITION STRATEGY SUMMARY")
+    print("="*70)
+    print(f"📊 Ticker: {ticker}")
+    print(f"💰 Total Capital: ${total_capital:,.2f}")
+    print(f"📈 Per Trade: ${per_trade_config['amount_per_trade']:,.2f} ({per_trade_config['percentage']:.1f}%)")
+    print(f"🔢 Conditions: {condition_count} entry, {condition_count} exit")
+    print(f"🧠 Logic: Entry={entry_logic}, Exit={exit_logic}")
+    print(f"🛡️ SL/TP: {'Enabled' if sl_tp_config['enabled'] else 'Disabled'}")
+    
+    print(f"\n📋 ENTRY CONDITIONS ({entry_logic} logic):")
+    for i, condition in enumerate(entry_conditions):
+        print(f"  {i+1}. {condition['comp1_name']} {condition['strategy']} {condition['comp2_name']}")
+    
+    print(f"\n📋 EXIT CONDITIONS ({exit_logic} logic):")
+    for i, condition in enumerate(exit_conditions):
+        print(f"  {i+1}. {condition['comp1_name']} {condition['strategy']} {condition['comp2_name']}")
+    
+    # Return all data in structured format
+    return (
+        ticker,                    # 0
+        period,                    # 1  
+        interval,                  # 2
+        total_capital,             # 3
+        per_trade_config,          # 4
+        sl_tp_config,              # 5
+        condition_count,           # 6
+        entry_logic,               # 7
+        exit_logic,                # 8
+        entry_conditions,          # 9
+        exit_conditions            # 10
+    )

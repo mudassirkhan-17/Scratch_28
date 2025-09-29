@@ -560,22 +560,21 @@ def volume_flow_indicator(data, period=14, upper_threshold=0.05, lower_threshold
     vfi_values = vfi_strategy.compute_values(data)
     return vfi_values
 
-def volume_price_trend(data, period=14, upper_threshold=0.05, lower_threshold=-0.05):
+def volume_price_trend(data, ma_period=14, threshold_percentage=0.01):
     """Calculate Volume Price Trend using the library implementation"""
     vpt_strategy = VolumePriceTrendStrategies(
-        period=period,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold
+        ma_period=ma_period,
+        threshold_percentage=threshold_percentage
     )
     vpt_values = vpt_strategy.compute_values(data)
     return vpt_values
 
-def volume_profile(data, period=14, upper_threshold=0.05, lower_threshold=-0.05):
+def volume_profile(data, period=14, bin_size=1, value_area_percentage=0.7):
     """Calculate Volume Profile using the library implementation"""
     vp_strategy = VolumeProfileStrategies(
         period=period,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold
+        bin_size=bin_size,
+        value_area_percentage=value_area_percentage
     )
     vp_values = vp_strategy.compute_values(data)
     return vp_values
@@ -590,24 +589,21 @@ def volume_zone_oscillator(data, period=14, upper_threshold=0.05, lower_threshol
     vzo_values = vzo_strategy.compute_values(data)
     return vzo_values
 
-def volume_weighted_macd(data, fast_period=12, slow_period=26, signal_period=9, upper_threshold=0.05, lower_threshold=-0.05):
+def volume_weighted_macd(data, fast_period=12, slow_period=26, signal_period=9, threshold=0):
     """Calculate Volume Weighted MACD using the library implementation"""
     vwmacd_strategy = VolumeWeightedMACDStrategies(
         fast_period=fast_period,
         slow_period=slow_period,
         signal_period=signal_period,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold
+        threshold=threshold
     )
     vwmacd_values = vwmacd_strategy.compute_values(data)
     return vwmacd_values
 
-def weighted_on_balance_volume(data, period=14, upper_threshold=0.05, lower_threshold=-0.05):
+def weighted_on_balance_volume(data, ma_period=20):
     """Calculate Weighted On Balance Volume using the library implementation"""
     wobv_strategy = WeightedOnBalanceVolumeStrategies(
-        period=period,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold
+        ma_period=ma_period
     )
     wobv_values = wobv_strategy.compute_values(data)
     return wobv_values
@@ -628,12 +624,12 @@ def absolute_price_oscillator(data, fast_period=12, slow_period=26, upper_thresh
     apo_values = apo_strategy.compute_values(data)
     return apo_values
 
-def adaptive_price_zone(data, period=14, upper_threshold=0.05, lower_threshold=-0.05):
+def adaptive_price_zone(data, period=20, multiplier=0.5, baseline=0):
     """Calculate Adaptive Price Zone using the library implementation"""
     apz_strategy = AdaptivePriceZoneStrategies(
         period=period,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold
+        multiplier=multiplier,
+        baseline=baseline
     )
     apz_values = apz_strategy.compute_values(data)
     return apz_values
@@ -684,12 +680,11 @@ def median_price(data, period=14, upper_threshold=0.05, lower_threshold=-0.05):
     mp_values = mp_strategy.compute_values(data)
     return mp_values
 
-def midpoint_price_period(data, period=14, upper_threshold=0.05, lower_threshold=-0.05):
+def midpoint_price_period(data, period=20, threshold=0.01):
     """Calculate Midpoint Price Period using the library implementation"""
     mpp_strategy = MidpointPricePeriodStrategies(
         period=period,
-        upper_threshold=upper_threshold,
-        lower_threshold=lower_threshold
+        threshold=threshold
     )
     mpp_values = mpp_strategy.compute_values(data)
     return mpp_values
@@ -951,15 +946,32 @@ def calculate_indicator(data, indicator_name, params):
         if len(params) < 6:
             raise ValueError(f"Indicator {indicator_name} requires 6 parameters (period, offset, sigma, baseline, lower, upper), got {len(params)}")
         return indicator_func(data, params[0], params[1], params[2], params[3], params[4], params[5])  # period, offset, sigma, baseline, lower, upper
-    # Volume Indicators
-    elif indicator_name in ["AOBV", "FVE", "NVI", "PVI", "PVR", "PVT", "PV", "VAMA", "VFI", "VPT", "VP", "VZO", "WOBV"]:
+    # Volume Indicators - Standard 3 parameter indicators
+    elif indicator_name in ["AOBV", "FVE", "NVI", "PVI", "PVR", "PVT", "PV", "VAMA", "VFI", "VZO"]:
         if len(params) < 3:
             raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper, lower), got {len(params)}")
         return indicator_func(data, params[0], params[1], params[2])  # period, upper, lower
-    elif indicator_name in ["EV_MACD", "VW_MACD"]:
+    # Volume Indicators - Special parameter requirements
+    elif indicator_name == "VPT":  # VolumePriceTrendStrategies(ma_period, threshold_percentage)
+        if len(params) < 2:
+            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (ma_period, threshold_percentage), got {len(params)}")
+        return indicator_func(data, params[0], params[1])  # ma_period, threshold_percentage
+    elif indicator_name == "VP":  # VolumeProfileStrategies(period, bin_size, value_area_percentage)
+        if len(params) < 3:
+            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, bin_size, value_area_percentage), got {len(params)}")
+        return indicator_func(data, params[0], params[1], params[2])  # period, bin_size, value_area_percentage
+    elif indicator_name == "WOBV":  # WeightedOnBalanceVolumeStrategies(ma_period)
+        if len(params) < 1:
+            raise ValueError(f"Indicator {indicator_name} requires 1 parameter (ma_period), got {len(params)}")
+        return indicator_func(data, params[0])  # ma_period
+    elif indicator_name == "EV_MACD":
         if len(params) < 5:
             raise ValueError(f"Indicator {indicator_name} requires 5 parameters (fast, slow, signal, upper, lower), got {len(params)}")
         return indicator_func(data, params[0], params[1], params[2], params[3], params[4])  # fast, slow, signal, upper, lower
+    elif indicator_name == "VW_MACD":  # VolumeWeightedMACDStrategies(fast_period, slow_period, signal_period, threshold)
+        if len(params) < 4:
+            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (fast_period, slow_period, signal_period, threshold), got {len(params)}")
+        return indicator_func(data, params[0], params[1], params[2], params[3])  # fast_period, slow_period, signal_period, threshold
     elif indicator_name == "KVO":
         if len(params) < 4:
             raise ValueError(f"Indicator {indicator_name} requires 4 parameters (fast, slow, upper, lower), got {len(params)}")
@@ -968,11 +980,20 @@ def calculate_indicator(data, indicator_name, params):
         if len(params) < 4:
             raise ValueError(f"Indicator {indicator_name} requires 4 parameters (fast, slow, upper, lower), got {len(params)}")
         return indicator_func(data, params[0], params[1], params[2], params[3])  # fast, slow, upper, lower
-    # Price Indicators
-    elif indicator_name in ["APZ", "AP", "DP", "DPO", "IP", "MP", "MPP", "PD", "WCP"]:
+    # Price Indicators - Standard 3 parameter indicators
+    elif indicator_name in ["AP", "DP", "DPO", "IP", "MP", "PD", "WCP"]:
         if len(params) < 3:
             raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper, lower), got {len(params)}")
         return indicator_func(data, params[0], params[1], params[2])  # period, upper, lower
+    # Price Indicators - Special parameter requirements
+    elif indicator_name == "APZ":  # AdaptivePriceZoneStrategies(period, multiplier, baseline)
+        if len(params) < 3:
+            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, multiplier, baseline), got {len(params)}")
+        return indicator_func(data, params[0], params[1], params[2])  # period, multiplier, baseline
+    elif indicator_name == "MPP":  # MidpointPricePeriodStrategies(period, threshold)
+        if len(params) < 2:
+            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, threshold), got {len(params)}")
+        return indicator_func(data, params[0], params[1])  # period, threshold
     elif indicator_name in ["APO", "PPO"]:
         if len(params) < 4:
             raise ValueError(f"Indicator {indicator_name} requires 4 parameters (fast, slow, upper, lower), got {len(params)}")

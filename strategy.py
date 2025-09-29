@@ -153,6 +153,92 @@ def generate_signals(data, strategy_data):
     return data
 
 
+def calculate_multi_condition_indicators(data, entry_conditions, exit_conditions):
+    """Calculate all indicators needed for multi-condition strategy"""
+    print(f"\nSTEP 3: Calculating indicators for multi-condition strategy...")
+    
+    from indicators import calculate_indicator
+    
+    # Collect all unique indicators needed
+    all_conditions = entry_conditions + exit_conditions
+    indicators_needed = set()
+    
+    for condition in all_conditions:
+        if condition['comp1_type'] == 'INDICATOR':
+            indicators_needed.add((condition['comp1_name'], condition['comp1_params']))
+        if condition['comp2_type'] == 'INDICATOR':
+            indicators_needed.add((condition['comp2_name'], condition['comp2_params']))
+    
+    # Calculate each unique indicator - create separate columns for each unique combination
+    condition_counter = 1
+    for condition in all_conditions:
+        if condition['comp1_type'] == 'INDICATOR':
+            col_name = f"{condition['comp1_name']}_cond{condition_counter}_left"
+            print(f"Calculating {condition['comp1_name']} with params {condition['comp1_params']} as {col_name}...")
+            data[col_name] = calculate_indicator(data, condition['comp1_name'], condition['comp1_params'])
+            condition['comp1_col'] = col_name  # Store the actual column name
+            print(f"✅ {condition['comp1_name']} calculated as {col_name}")
+        
+        if condition['comp2_type'] == 'INDICATOR':
+            col_name = f"{condition['comp2_name']}_cond{condition_counter}_right"
+            print(f"Calculating {condition['comp2_name']} with params {condition['comp2_params']} as {col_name}...")
+            data[col_name] = calculate_indicator(data, condition['comp2_name'], condition['comp2_params'])
+            condition['comp2_col'] = col_name  # Store the actual column name
+            print(f"✅ {condition['comp2_name']} calculated as {col_name}")
+        
+        condition_counter += 1
+    
+    print("✅ All multi-condition indicators calculated")
+    return data
+
+
+def generate_multi_condition_signals(data, entry_conditions, exit_conditions, entry_logic, exit_logic):
+    """Generate entry and exit signals using MultiConditionDetector"""
+    print(f"\nSTEP 4: Generating multi-condition signals...")
+    
+    from new12 import MultiConditionDetector
+    
+    # Create detector
+    detector = MultiConditionDetector()
+    detector.set_logic_type(entry_logic, exit_logic)
+    
+    # Add all conditions
+    for condition in entry_conditions:
+        detector.add_entry_condition(condition)
+    
+    for condition in exit_conditions:
+        detector.add_exit_condition(condition)
+    
+    print(detector.get_condition_summary())
+    
+    # Generate signals for each row
+    entry_signals = []
+    exit_signals = []
+    
+    print("🔄 Evaluating conditions for each time period...")
+    for i in range(len(data)):
+        entry_signal = detector.evaluate_entry_conditions(data, i)
+        exit_signal = detector.evaluate_exit_conditions(data, i)
+        
+        entry_signals.append(entry_signal)
+        exit_signals.append(exit_signal)
+    
+    # Add signals to DataFrame
+    data['Entry_Signal'] = entry_signals
+    data['Exit_Signal'] = exit_signals
+    
+    # Count signals
+    entry_count = sum(entry_signals)
+    exit_count = sum(exit_signals)
+    
+    print(f"✅ Multi-condition signals generated:")
+    print(f"  📈 Entry signals: {entry_count}")
+    print(f"  📉 Exit signals: {exit_count}")
+    print("📋 Next: Execute trades based on signals")
+    
+    return data
+
+
 def execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
     """Step 5: Execute Long Entry/Exit Strategy - Modular Version"""
     print(f"\nSTEP 5: Executing Long Entry/Exit Strategy...")
@@ -263,12 +349,17 @@ def execute_strategy():
     
     if choice == "1":
         strategy_data = get_strategy_inputs()
+        strategy_complexity = "single"
     elif choice == "2":
-        strategy_data = get_multi_strategy_inputs()
+        from inputs import get_multi_condition_strategy_inputs
+        strategy_data = get_multi_condition_strategy_inputs()
+        strategy_complexity = "multi_condition"
     elif choice == "3":
         strategy_data = get_multi_ticker_inputs()
+        strategy_complexity = "multi_ticker"
     elif choice == "4":
         strategy_data = get_multi_ticker_multi_strategy_inputs()
+        strategy_complexity = "multi_ticker_multi"
     else:
         print("❌ Invalid choice")
         return
@@ -277,21 +368,47 @@ def execute_strategy():
         print("❌ No strategy data collected")
         return
     
-    # Extract the basic info we need
-    ticker = strategy_data[0]
-    period = strategy_data[1] 
-    interval = strategy_data[2]
-    total_capital = strategy_data[3]
-    per_trade_config = strategy_data[4]
-    
-    print(f"✅ Strategy inputs collected for {ticker}")
-    print(f"💰 Total Capital: ${total_capital:,.2f}")
-    print(f"📊 Per Trade: ${per_trade_config['amount_per_trade']:,.2f} ({per_trade_config['percentage']:.1f}% allocation)")
-    
-    # Step 1.5: Get SL/TP Configuration
-    from inputs import get_sl_tp_configuration
-    sl_tp_config = get_sl_tp_configuration()
-    print(f"✅ SL/TP configuration: {sl_tp_config}")
+    # Extract the basic info based on strategy complexity
+    if strategy_complexity == "single":
+        # Single condition format: (ticker, period, interval, total_capital, per_trade_config, ...)
+        ticker = strategy_data[0]
+        period = strategy_data[1] 
+        interval = strategy_data[2]
+        total_capital = strategy_data[3]
+        per_trade_config = strategy_data[4]
+        
+        print(f"✅ Strategy inputs collected for {ticker}")
+        print(f"💰 Total Capital: ${total_capital:,.2f}")
+        print(f"📊 Per Trade: ${per_trade_config['amount_per_trade']:,.2f} ({per_trade_config['percentage']:.1f}% allocation)")
+        
+        # Step 1.5: Get SL/TP Configuration
+        from inputs import get_sl_tp_configuration
+        sl_tp_config = get_sl_tp_configuration()
+        print(f"✅ SL/TP configuration: {sl_tp_config}")
+        
+    elif strategy_complexity == "multi_condition":
+        # Multi-condition format: (ticker, period, interval, total_capital, per_trade_config, sl_tp_config, condition_count, entry_logic, exit_logic, entry_conditions, exit_conditions)
+        ticker = strategy_data[0]
+        period = strategy_data[1] 
+        interval = strategy_data[2]
+        total_capital = strategy_data[3]
+        per_trade_config = strategy_data[4]
+        sl_tp_config = strategy_data[5]
+        condition_count = strategy_data[6]
+        entry_logic = strategy_data[7]
+        exit_logic = strategy_data[8]
+        entry_conditions = strategy_data[9]
+        exit_conditions = strategy_data[10]
+        
+        print(f"✅ Multi-condition strategy inputs collected for {ticker}")
+        print(f"💰 Total Capital: ${total_capital:,.2f}")
+        print(f"📊 Per Trade: ${per_trade_config['amount_per_trade']:,.2f} ({per_trade_config['percentage']:.1f}% allocation)")
+        print(f"🔢 Conditions: {condition_count} entry ({entry_logic}), {condition_count} exit ({exit_logic})")
+        print(f"✅ SL/TP configuration: {sl_tp_config}")
+        
+    else:
+        print("❌ Unsupported strategy complexity")
+        return
     
     # Step 2: Download market data
     print(f"\nSTEP 2: Downloading market data...")
@@ -305,11 +422,18 @@ def execute_strategy():
         
     print(f"✅ Downloaded {len(data)} rows of data")
     
-    # Step 3: Calculate indicators
-    data = calculate_indicators(data, strategy_data)
-    
-    # Step 4: Generate signals
-    data = generate_signals(data, strategy_data)
+    # Step 3 & 4: Calculate indicators and generate signals based on strategy complexity
+    if strategy_complexity == "single":
+        # Single condition strategy
+        data = calculate_indicators(data, strategy_data)
+        data = generate_signals(data, strategy_data)
+    elif strategy_complexity == "multi_condition":
+        # Multi-condition strategy
+        data = calculate_multi_condition_indicators(data, entry_conditions, exit_conditions)
+        data = generate_multi_condition_signals(data, entry_conditions, exit_conditions, entry_logic, exit_logic)
+    else:
+        print("❌ Unsupported strategy complexity for execution")
+        return
     
     # Step 5: Execute Strategy based on user choice
     if strategy_type == "long":

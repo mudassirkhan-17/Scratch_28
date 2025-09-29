@@ -13,6 +13,7 @@ execute_strategy() --> get_strategy_direction() --> get_inputs() --> get_total_c
 get_per_trade_allocation() --> download_data() --> calculate_indicators() --> 
 generate_signals() --> execute_long_strategy() OR execute_short_strategy() OR execute_reversal_strategy()
 
+
 DETAILED BREAKDOWN:
 1. execute_strategy() - Main orchestrator function
 2. get_strategy_direction() - Ask user: Long/Short/Reversal strategy
@@ -24,6 +25,7 @@ DETAILED BREAKDOWN:
 8. calculate_indicators() - Compute technical indicators (SMA, EMA, RSI, etc.)
 9. generate_signals() - Create buy/sell signals with candle comparison logic
 10. execute_[strategy_type]() - Execute trades based on user's chosen strategy type
+11. calculate_advanced_metrics() - Calculate performance metrics (Sharpe, Sortino, Calmar ratios)
 
 
 
@@ -113,6 +115,20 @@ _process_reversal_signals(self, current_price, entry_signal, exit_signal):
 get_portfolio_tracking_data(self, current_price):
 
 print_final_results(self):
+    - Display basic results (profit, return, trades)
+    - Calculate and display advanced performance metrics:
+      * Sharpe Ratio: Risk-adjusted return (excess return / volatility)
+      * Sortino Ratio: Like Sharpe but only penalizes downside volatility
+      * Calmar Ratio: Annual return / Maximum drawdown
+      * Max Drawdown: Worst peak-to-trough loss
+      * Volatility: Standard deviation of returns
+      * Win Rate: Percentage of profitable trades
+      * Profit Factor: Gross profit / Gross loss
 
-
+ADVANCED METRICS EXPLAINED:
+- Sharpe Ratio: Higher is better (>1.0 is good, >2.0 is excellent)
+- Sortino Ratio: Usually higher than Sharpe (focuses on "bad" volatility)
+- Calmar Ratio: Higher is better (>1.0 means good reward-to-risk)
+- Max Drawdown: Lower is better (shows worst-case scenario)
+- Profit Factor: >1.0 is profitable, >2.0 is excellent
 
