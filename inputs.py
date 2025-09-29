@@ -34,6 +34,9 @@ def get_strategy_inputs():
 
     period, interval = get_time_interval_inputs() # Time interval selection
     
+    # Capital Management
+    total_capital = get_total_capital()
+    
     print("\n--- ENTRY STRATEGY ---")
     
     """Capture comparision between indicators, constants, or price"""
@@ -134,7 +137,7 @@ def get_strategy_inputs():
     # Get candles ago for exit comparison 2
     exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
     
-    return (ticker, period, interval, entry_comp1_type, entry_comp1_name, entry_comp1_params,
+    return (ticker, period, interval, total_capital, entry_comp1_type, entry_comp1_name, entry_comp1_params,
             entry_comp2_type, entry_comp2_name, entry_comp2_params,
             exit_comp1_type, exit_comp1_name, exit_comp1_params,
             exit_comp2_type, exit_comp2_name, exit_comp2_params,

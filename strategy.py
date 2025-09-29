@@ -153,12 +153,12 @@ def generate_signals(data, strategy_data):
     return data
 
 
-def execute_long_strategy(data, strategy_data, sl_tp_config):
+def execute_long_strategy(data, strategy_data, sl_tp_config, total_capital):
     """Step 5: Execute Long Entry/Exit Strategy - Modular Version"""
     print(f"\nSTEP 5: Executing Long Entry/Exit Strategy...")
     
     from trade_executor import TradeExecutor
-    executor = TradeExecutor(1000, sl_tp_config)
+    executor = TradeExecutor(total_capital, sl_tp_config)
     
     for i in range(len(data)):
         current_price = data['Close'].iloc[i]
@@ -177,12 +177,12 @@ def execute_long_strategy(data, strategy_data, sl_tp_config):
     executor.print_final_results()
     return data, executor.trades
 
-def execute_short_strategy(data, strategy_data, sl_tp_config):
+def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital):
     """Step 5: Execute Short Entry/Exit Strategy - Modular Version"""
     print(f"\nSTEP 5: Executing Short Entry/Exit Strategy...")
     
     from trade_executor import TradeExecutor
-    executor = TradeExecutor(1000, sl_tp_config)
+    executor = TradeExecutor(total_capital, sl_tp_config)
     
     for i in range(len(data)):
         current_price = data['Close'].iloc[i]
@@ -201,13 +201,13 @@ def execute_short_strategy(data, strategy_data, sl_tp_config):
     executor.print_final_results()
     return data, executor.trades
 
-def execute_reversal_strategy(data, strategy_data, sl_tp_config):
+def execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital):
     """Step 5: Execute Long/Short Reversal Strategy - Modular Version"""
     print(f"\nSTEP 5: Executing Long/Short Reversal Strategy...")
     print("🔄 REVERSAL STRATEGY: Always in market - Entry=Long, Exit=Short")
     
     from trade_executor import TradeExecutor
-    executor = TradeExecutor(1000, sl_tp_config)
+    executor = TradeExecutor(total_capital, sl_tp_config)
     
     for i in range(len(data)):
         current_price = data['Close'].iloc[i]
@@ -281,8 +281,10 @@ def execute_strategy():
     ticker = strategy_data[0]
     period = strategy_data[1] 
     interval = strategy_data[2]
+    total_capital = strategy_data[3]
     
     print(f"✅ Strategy inputs collected for {ticker}")
+    print(f"💰 Total Capital: ${total_capital:,.2f}")
     
     # Step 1.5: Get SL/TP Configuration
     from inputs import get_sl_tp_configuration
@@ -309,11 +311,11 @@ def execute_strategy():
     
     # Step 5: Execute Strategy based on user choice
     if strategy_type == "long":
-        data, trades = execute_long_strategy(data, strategy_data, sl_tp_config)
+        data, trades = execute_long_strategy(data, strategy_data, sl_tp_config, total_capital)
     elif strategy_type == "short":
-        data, trades = execute_short_strategy(data, strategy_data, sl_tp_config)
+        data, trades = execute_short_strategy(data, strategy_data, sl_tp_config, total_capital)
     else:  # reversal
-        data, trades = execute_reversal_strategy(data, strategy_data, sl_tp_config)
+        data, trades = execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital)
     
     return strategy_data, data, trades
 
