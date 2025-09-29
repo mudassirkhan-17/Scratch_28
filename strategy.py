@@ -166,7 +166,7 @@ def execute_long_strategy(data, strategy_data):
     trades = []
     
     print(f"Starting with: ${initial_cash:,.2f}")
-    print(f"Available to invest: ${invested_amount:,.2f} (80%)")
+    print(f"Available to invest: ${invested_amount:,.2f} (100%)")
     
     for i in range(len(data)):
         current_price = data['Close'].iloc[i]
@@ -179,12 +179,12 @@ def execute_long_strategy(data, strategy_data):
             max_shares = int(invested_amount / current_price)  # Whole shares only
             buying_price = max_shares * current_price  # Actual money spent
             shares_owned = max_shares  # Shares we own
-            remaining = invested_amount - buying_price  # Leftover investment money
+            remaining = initial_cash - buying_price  # Money left in account
             final_cash = 0  # Reset for calculation
             
             print(f"LONG ENTRY: Bought {shares_owned} shares at ${current_price:.2f}")
             print(f"  Money spent (buying_price): ${buying_price:,.2f}")
-            print(f"  Leftover investment money (remaining): ${remaining:,.2f}")
+            print(f"  Money left in account (remaining): ${remaining:,.2f}")
             
             trades.append({
                 'type': 'BUY',
@@ -265,7 +265,7 @@ def execute_short_strategy(data, strategy_data):
     trades = []
     
     print(f"Starting with: ${initial_cash:,.2f}")
-    print(f"Available to invest: ${invested_amount:,.2f} (80%)")
+    print(f"Available to invest: ${invested_amount:,.2f} (100%)")
     
     for i in range(len(data)):
         current_price = data['Close'].iloc[i]
@@ -316,7 +316,7 @@ def execute_short_strategy(data, strategy_data):
             max_shares = int(invested_amount / current_price)  # Whole shares only
             buying_price = max_shares * current_price  # Money received from shorting
             shares_owned = -max_shares  # Negative shares (we owe them)
-            remaining = invested_amount - buying_price  # Leftover investment money
+            remaining = initial_cash - buying_price  # Money left in account
             final_cash = 0  # Reset for calculation
             
             print(f"SHORT ENTRY: Sold {max_shares} shares at ${current_price:.2f}")
@@ -403,7 +403,7 @@ def execute_reversal_strategy(data, strategy_data):
     trades = []
     
     print(f"Starting with: ${initial_cash:,.2f}")
-    print(f"Available to invest: ${invested_amount:,.2f} (80%)")
+    print(f"Available to invest: ${invested_amount:,.2f} (100%)")
     print("🔄 REVERSAL STRATEGY: Always in market - Entry=Long, Exit=Short")
     
     for i in range(len(data)):
