@@ -2,4 +2,49 @@ first indicators file, input files, comparision,
 then we create strategy.py --> which will contain usage of functions etc
 strategy.py --> get_inputs() --> download_data() --> after we got data we make dataframe containing
 indicators --> calculate_indicators() --> now we got indciator we have to see how much to shift column
-i.e candle comparision
+i.e candle comparision --> generate_signals() --> they generate signals and give dataframe with entry/exit
+--> entry long()  -> entry short () --> formula mentioned below. --> get_strategy_direction() --> to
+ask wether to long or short --> execute_reversal_strategy() --> now we got everything so far. -->
+we added three files. --> portfoliomanager, risk manager, trade executor. refer pt1 for reference
+
+
+
+
+
+
+
+
+initial cash = 100
+invested_amount = initial cash * 0.8
+buying price = no of shares * price
+remaining = invested_amount - buying price  
+final cash = 0
+sellingprice = no of shares * price
+
+so i asked gpt to wrote sl/tp formula and what it meniton was if tp/sl hit then close the trade instead 
+of signals which is wrong
+
+pt1.
+
+portfoliomanager:
+enter_long_position(self, current_price) --> calculate variables only [shares,moneyspent,remaining]
+exit_long_position(self, current_price) --> same --> 'shares','selling_price', profit_loss,'final_cash'--> reset variables as well
+
+enter_short_position(self, current_price):
+exit_short_position(self, current_price): --> shares are in positive btw
+
+get_portfolio_value(self, current_price): --> end portfolio value after selling, we corrected the short logic
+
+get_position_value(self, current_price): --> get current value
+
+reset_for_next_trade(self, new_cash): --> make everything nulll
+
+is_long,short,flat()
+
+get_position_info() --> curent portoflio etc. 
+
+calculate_total_return(self):--> initial cash, final value, total profit, total return percent
+
+
+
+
