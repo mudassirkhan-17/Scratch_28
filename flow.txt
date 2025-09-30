@@ -8,24 +8,59 @@ ask wether to long or short --> execute_reversal_strategy() --> now we got every
 we added three files. --> portfoliomanager, risk manager, trade executor. refer pt1 for reference
 --> get_total_capital() --> 
 
-CORRECTED FLOW:
+CORRECTED FLOW: SINGLE STRATEGY
 execute_strategy() --> get_strategy_direction() --> get_inputs() --> get_total_capital() --> 
 get_per_trade_allocation() --> download_data() --> calculate_indicators() --> 
 generate_signals() --> execute_long_strategy() OR execute_short_strategy() OR execute_reversal_strategy()
+--> calculate_advanced_metrics()
+
+MULTIPLE STRATEGY
+
+STEP 2A: SINGLE STRATEGY FLOW
+execute_strategy() --> get_strategy_direction() --> get_strategy_inputs() --> 
+download_data() --> calculate_indicators() --> generate_signals() --> 
+execute_[strategy_type]() --> calculate_advanced_metrics()
+
+STEP 2B: MULTI-CONDITION STRATEGY FLOW  
+execute_strategy() --> get_strategy_direction() --> get_multi_condition_strategy_inputs() --> 
+download_data() --> calculate_multi_condition_indicators() --> generate_multi_condition_signals() --> 
+execute_[strategy_type]() --> calculate_advanced_metrics()
+
+STEP 2C: MULTI-TICKER STRATEGY FLOW
+execute_strategy() --> get_strategy_direction() --> get_multi_ticker_inputs() --> 
+download_multi_ticker_data() --> calculate_multi_ticker_indicators() --> 
+generate_multi_ticker_signals() --> execute_multi_ticker_strategy() --> 
+calculate_portfolio_metrics()
 
 
 DETAILED BREAKDOWN:
 1. execute_strategy() - Main orchestrator function
-2. get_strategy_direction() - Ask user: Long/Short/Reversal strategy
-3. get_inputs() - Collect strategy parameters (ticker, indicators, comparisons)
-4. get_total_capital() - Ask user total portfolio capital
-5. get_per_trade_allocation() - Ask user per-trade allocation (% or $)
-6. get_sl_tp_configuration() - Ask user SL/TP and trailing SL settings
-7. download_data() - Download market data from yfinance
-8. calculate_indicators() - Compute technical indicators (SMA, EMA, RSI, etc.)
-9. generate_signals() - Create buy/sell signals with candle comparison logic
-10. execute_[strategy_type]() - Execute trades based on user's chosen strategy type
-11. calculate_advanced_metrics() - Calculate performance metrics (Sharpe, Sortino, Calmar ratios)
+2. [COMPLEXITY CHOICE] - User selects: Single (1) or Multi-condition (2) strategy
+3. get_strategy_direction() - Ask user: Long/Short/Reversal strategy
+
+SINGLE STRATEGY PATH:
+4a. get_strategy_inputs() - Collect single strategy parameters (ticker, indicators, comparisons, SL/TP)
+5a. download_data() - Download market data from yfinance  
+6a. calculate_indicators() - Compute technical indicators (SMA, EMA, RSI, etc.)
+7a. generate_signals() - Create buy/sell signals with candle comparison logic
+
+MULTI-CONDITION STRATEGY PATH:
+4b. get_multi_condition_strategy_inputs() - Collect multi-condition parameters (conditions, logic, SL/TP)
+5b. download_data() - Download market data from yfinance
+6b. calculate_multi_condition_indicators() - Compute indicators for all conditions
+7b. generate_multi_condition_signals() - Create signals using AND/OR logic
+
+MULTI-TICKER STRATEGY PATH:
+4c. get_multi_ticker_inputs() - Collect tickers, allocations, strategies per ticker
+5c. download_multi_ticker_data() - Download data for all tickers simultaneously
+6c. calculate_multi_ticker_indicators() - Compute indicators for each ticker
+7c. generate_multi_ticker_signals() - Create signals for each ticker independently
+8c. execute_multi_ticker_strategy() - Execute trades with portfolio allocation management
+9c. calculate_portfolio_metrics() - Calculate portfolio-level and per-ticker metrics
+
+COMMON FINAL STEPS (Single & Multi-Condition):
+8. execute_[strategy_type]() - Execute trades based on user's chosen strategy type (Long/Short/Reversal)
+9. calculate_advanced_metrics() - Calculate performance metrics (Sharpe, Sortino, Calmar ratios)
 
 
 

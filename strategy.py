@@ -84,11 +84,11 @@ def generate_signals(data, strategy_data):
     exit_comp2_name = strategy_data[15]
     exit_comp2_params = strategy_data[16]
     
-    entry_comp1_candles_ago = strategy_data[17]
-    entry_strategy = strategy_data[18]
-    entry_comp2_candles_ago = strategy_data[19]
-    exit_comp1_candles_ago = strategy_data[20]
-    exit_strategy = strategy_data[21]
+    entry_strategy = strategy_data[17]
+    exit_strategy = strategy_data[18]
+    entry_comp1_candles_ago = strategy_data[19]
+    entry_comp2_candles_ago = strategy_data[20]
+    exit_comp1_candles_ago = strategy_data[21]
     exit_comp2_candles_ago = strategy_data[22]
     
     # Add shifted columns to data for comparison functions
@@ -191,6 +191,192 @@ def calculate_multi_condition_indicators(data, entry_conditions, exit_conditions
     return data
 
 
+def calculate_multi_ticker_indicators(data, strategy_data, tickers):
+    """Calculate indicators for each ticker in multi-ticker strategy"""
+    print(f"\nSTEP 3: Calculating multi-ticker indicators...")
+    from indicators import calculate_indicator
+    from comparision_types import ComparisonType
+    
+    # Extract strategy data (single strategy applied to all tickers)
+    entry_comp1_type = strategy_data['entry_comp1_type']
+    entry_comp1_name = strategy_data['entry_comp1_name']
+    entry_comp1_params = strategy_data['entry_comp1_params']
+    
+    entry_comp2_type = strategy_data['entry_comp2_type']
+    entry_comp2_name = strategy_data['entry_comp2_name']
+    entry_comp2_params = strategy_data['entry_comp2_params']
+    
+    exit_comp1_type = strategy_data['exit_comp1_type']
+    exit_comp1_name = strategy_data['exit_comp1_name']
+    exit_comp1_params = strategy_data['exit_comp1_params']
+    
+    exit_comp2_type = strategy_data['exit_comp2_type']
+    exit_comp2_name = strategy_data['exit_comp2_name']
+    exit_comp2_params = strategy_data['exit_comp2_params']
+    
+    print(f"📊 Strategy: {strategy_data['entry_strategy']} / {strategy_data['exit_strategy']}")
+    print(f"📈 Applying to tickers: {', '.join(tickers)}")
+    
+    # Calculate indicators for each ticker
+    for ticker in tickers:
+        print(f"\n📊 Calculating indicators for {ticker}...")
+        
+        # Create ticker-specific price data for indicator calculation
+        ticker_data = data[['Date', f'{ticker}_Open', f'{ticker}_High', f'{ticker}_Low', f'{ticker}_Close', f'{ticker}_Volume']].copy()
+        ticker_data.columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']  # Rename for indicator functions
+        
+        # Calculate entry comparison 1 indicator
+        if entry_comp1_type == ComparisonType.INDICATOR:
+            print(f"  📈 Calculating {entry_comp1_name}{entry_comp1_params} for entry comparison 1...")
+            indicator_values = calculate_indicator(ticker_data, entry_comp1_name, entry_comp1_params)
+            data[f'{ticker}_{entry_comp1_name}_entry1'] = indicator_values
+            print(f"  ✅ {ticker}_{entry_comp1_name}_entry1 calculated")
+        
+        # Calculate entry comparison 2 indicator
+        if entry_comp2_type == ComparisonType.INDICATOR:
+            print(f"  📈 Calculating {entry_comp2_name}{entry_comp2_params} for entry comparison 2...")
+            indicator_values = calculate_indicator(ticker_data, entry_comp2_name, entry_comp2_params)
+            data[f'{ticker}_{entry_comp2_name}_entry2'] = indicator_values
+            print(f"  ✅ {ticker}_{entry_comp2_name}_entry2 calculated")
+        
+        # Calculate exit comparison 1 indicator
+        if exit_comp1_type == ComparisonType.INDICATOR:
+            print(f"  📈 Calculating {exit_comp1_name}{exit_comp1_params} for exit comparison 1...")
+            indicator_values = calculate_indicator(ticker_data, exit_comp1_name, exit_comp1_params)
+            data[f'{ticker}_{exit_comp1_name}_exit1'] = indicator_values
+            print(f"  ✅ {ticker}_{exit_comp1_name}_exit1 calculated")
+        
+        # Calculate exit comparison 2 indicator
+        if exit_comp2_type == ComparisonType.INDICATOR:
+            print(f"  📈 Calculating {exit_comp2_name}{exit_comp2_params} for exit comparison 2...")
+            indicator_values = calculate_indicator(ticker_data, exit_comp2_name, exit_comp2_params)
+            data[f'{ticker}_{exit_comp2_name}_exit2'] = indicator_values
+            print(f"  ✅ {ticker}_{exit_comp2_name}_exit2 calculated")
+        
+        print(f"✅ {ticker} indicators complete")
+    
+    print(f"\n✅ All multi-ticker indicators calculated")
+    print(f"📊 New columns added: {[col for col in data.columns if any(ticker in col for ticker in tickers) and ('_SMA_' in col or '_EMA_' in col or '_RSI_' in col)]}")
+    
+    return data
+
+def generate_multi_ticker_signals(data, strategy_data, tickers):
+    """Generate entry and exit signals for each ticker in multi-ticker strategy"""
+    print(f"\nSTEP 4: Generating multi-ticker signals...")
+    
+    # Import comparison functions
+    from comparisons import (crossed_up, crossed_down, greater_than, less_than, 
+                           equal_comparison, increased, decreased, crossed,
+                           greater_or_equal, less_or_equal, within_range)
+    from comparision_types import ComparisonType
+    
+    # Extract strategy data
+    entry_strategy = strategy_data['entry_strategy']
+    exit_strategy = strategy_data['exit_strategy']
+    
+    entry_comp1_candles_ago = strategy_data['entry_comp1_candles_ago']
+    entry_comp2_candles_ago = strategy_data['entry_comp2_candles_ago']
+    exit_comp1_candles_ago = strategy_data['exit_comp1_candles_ago']
+    exit_comp2_candles_ago = strategy_data['exit_comp2_candles_ago']
+    
+    # Strategy mapping
+    strategy_map = {
+        "CROSSED UP": crossed_up,
+        "CROSSED DOWN": crossed_down,
+        "GREATER THAN": greater_than,
+        "LESS THAN": less_than,
+        "EQUAL": equal_comparison,
+        "GREATER OR EQUAL": greater_or_equal,
+        "LESS OR EQUAL": less_or_equal,
+        "WITHIN RANGE": within_range,
+        "INCREASED": increased,
+        "DECREASED": decreased,
+        "CROSSED": crossed
+    }
+    
+    print(f"📊 Entry Strategy: {entry_strategy}")
+    print(f"📊 Exit Strategy: {exit_strategy}")
+    
+    # Generate signals for each ticker
+    for ticker in tickers:
+        print(f"\n📊 Generating signals for {ticker}...")
+        
+        # Prepare comparison columns for entry
+        entry_col1 = get_comparison_column(data, strategy_data, ticker, 'entry', 1, entry_comp1_candles_ago)
+        entry_col2 = get_comparison_column(data, strategy_data, ticker, 'entry', 2, entry_comp2_candles_ago)
+        
+        # Prepare comparison columns for exit
+        exit_col1 = get_comparison_column(data, strategy_data, ticker, 'exit', 1, exit_comp1_candles_ago)
+        exit_col2 = get_comparison_column(data, strategy_data, ticker, 'exit', 2, exit_comp2_candles_ago)
+        
+        # Generate entry signals
+        entry_func = strategy_map.get(entry_strategy)
+        if entry_func:
+            print(f"  📈 Generating entry signals: {entry_col1} {entry_strategy} {entry_col2}")
+            data[f'{ticker}_Entry_Signal'] = entry_func(data, entry_col1, entry_col2)
+            print(f"  ✅ {ticker}_Entry_Signal generated")
+        
+        # Generate exit signals
+        exit_func = strategy_map.get(exit_strategy)
+        if exit_func:
+            print(f"  📉 Generating exit signals: {exit_col1} {exit_strategy} {exit_col2}")
+            data[f'{ticker}_Exit_Signal'] = exit_func(data, exit_col1, exit_col2)
+            print(f"  ✅ {ticker}_Exit_Signal generated")
+        
+        print(f"✅ {ticker} signals complete")
+    
+    # Summary
+    entry_signals = [col for col in data.columns if '_Entry_Signal' in col]
+    exit_signals = [col for col in data.columns if '_Exit_Signal' in col]
+    
+    print(f"\n✅ All multi-ticker signals generated")
+    print(f"📈 Entry signals: {entry_signals}")
+    print(f"📉 Exit signals: {exit_signals}")
+    
+    return data
+
+def get_comparison_column(data, strategy_data, ticker, signal_type, comp_num, candles_ago):
+    """Helper function to get the correct comparison column name with candles ago logic"""
+    from comparision_types import ComparisonType
+    
+    # Get comparison info
+    comp_type = strategy_data[f'{signal_type}_comp{comp_num}_type']
+    comp_name = strategy_data[f'{signal_type}_comp{comp_num}_name']
+    comp_params = strategy_data[f'{signal_type}_comp{comp_num}_params']
+    
+    if comp_type == ComparisonType.INDICATOR:
+        # Use ticker-prefixed indicator column
+        base_col = f'{ticker}_{comp_name}_{signal_type}{comp_num}'
+        
+        # Apply candles ago logic if needed
+        if candles_ago > 0:
+            shifted_col = f'{base_col}_shifted_{candles_ago}'
+            if shifted_col not in data.columns:
+                data[shifted_col] = data[base_col].shift(candles_ago)
+            return shifted_col
+        else:
+            return base_col
+            
+    elif comp_type == ComparisonType.CONSTANT:
+        # Create constant column
+        const_col = f'{ticker}_CONSTANT_{comp_params[0]}'
+        if const_col not in data.columns:
+            data[const_col] = comp_params[0]
+        return const_col
+        
+    else:  # PRICE
+        # Use ticker-prefixed price column
+        price_col = f'{ticker}_Close'
+        
+        # Apply candles ago logic if needed
+        if candles_ago > 0:
+            shifted_col = f'{price_col}_shifted_{candles_ago}'
+            if shifted_col not in data.columns:
+                data[shifted_col] = data[price_col].shift(candles_ago)
+            return shifted_col
+        else:
+            return price_col
+
 def generate_multi_condition_signals(data, entry_conditions, exit_conditions, entry_logic, exit_logic):
     """Generate entry and exit signals using MultiConditionDetector"""
     print(f"\nSTEP 4: Generating multi-condition signals...")
@@ -285,6 +471,58 @@ def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per
     # Print final results with advanced metrics
     executor.print_final_results(data)
     return data, executor.trades
+
+def execute_multi_ticker_strategy(data, strategy_data, strategy_type):
+    """Execute multi-ticker strategy with portfolio allocation management"""
+    print(f"\nSTEP 5: Executing Multi-Ticker {strategy_type.title()} Strategy...")
+    
+    from multi_ticker_portfolio import MultiTickerPortfolioManager
+    
+    # Extract strategy parameters
+    tickers = strategy_data['tickers']
+    total_capital = strategy_data['total_capital']
+    allocations = strategy_data['allocations']
+    trade_sizes = strategy_data['trade_sizes']
+    sl_tp_config = strategy_data['sl_tp_config']
+    
+    # Initialize multi-ticker portfolio manager
+    portfolio_manager = MultiTickerPortfolioManager(
+        total_capital, allocations, trade_sizes, sl_tp_config
+    )
+    
+    print(f"📊 Processing {len(data)} market periods...")
+    
+    # Process each market period
+    for i in range(len(data)):
+        # Get current prices for all tickers
+        current_prices = {}
+        for ticker in tickers:
+            current_prices[ticker] = data[f'{ticker}_Close'].iloc[i]
+        
+        # Get signals for all tickers
+        signals = {}
+        for ticker in tickers:
+            signals[f'{ticker}_Entry_Signal'] = data[f'{ticker}_Entry_Signal'].iloc[i]
+            signals[f'{ticker}_Exit_Signal'] = data[f'{ticker}_Exit_Signal'].iloc[i]
+        
+        # Process market tick for all tickers
+        total_portfolio_value = portfolio_manager.process_market_tick(
+            current_prices, signals, strategy_type
+        )
+        
+        # Update data with portfolio tracking
+        data.loc[data.index[i], 'Portfolio_Value'] = total_portfolio_value
+        
+        # Add per-ticker values for tracking
+        for ticker in tickers:
+            ticker_portfolio = portfolio_manager.ticker_portfolios[ticker]
+            ticker_value = ticker_portfolio.get_portfolio_value(current_prices[ticker])
+            data.loc[data.index[i], f'{ticker}_Portfolio_Value'] = ticker_value
+    
+    # Print final results
+    portfolio_manager.print_final_results(data)
+    
+    return data, portfolio_manager.all_trades
 
 def execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
     """Step 5: Execute Long/Short Reversal Strategy - Modular Version"""
@@ -405,15 +643,35 @@ def execute_strategy():
         print(f"🔢 Conditions: {condition_count} entry ({entry_logic}), {condition_count} exit ({exit_logic})")
         print(f"✅ SL/TP configuration: {sl_tp_config}")
         
+    elif strategy_complexity == "multi_ticker":
+        # Multi-ticker format: dictionary with tickers, allocations, strategy_data, etc.
+        tickers = strategy_data['tickers']
+        total_capital = strategy_data['total_capital']
+        allocations = strategy_data['allocations']
+        trade_sizes = strategy_data['trade_sizes']
+        period = strategy_data['period']
+        interval = strategy_data['interval']
+        sl_tp_config = strategy_data['sl_tp_config']
+        
+        print(f"✅ Multi-ticker strategy inputs collected")
+        print(f"📈 Tickers: {', '.join(tickers)}")
+        print(f"💰 Total Capital: ${total_capital:,.2f}")
+        print(f"📊 Allocations: {', '.join([f'{t}:{a*100:.1f}%' for t, a in allocations.items()])}")
+        print(f"✅ SL/TP configuration: {sl_tp_config}")
+        
     else:
         print("❌ Unsupported strategy complexity")
         return
     
     # Step 2: Download market data
     print(f"\nSTEP 2: Downloading market data...")
-    from inputs import download_and_prepare_data
     
-    data = download_and_prepare_data(ticker, period, interval)
+    if strategy_complexity == "multi_ticker":
+        from inputs import download_multi_ticker_data
+        data = download_multi_ticker_data(tickers, period, interval)
+    else:
+        from inputs import download_and_prepare_data
+        data = download_and_prepare_data(ticker, period, interval)
     
     if data is None:
         print("❌ Failed to download data")
@@ -430,12 +688,59 @@ def execute_strategy():
         # Multi-condition strategy
         data = calculate_multi_condition_indicators(data, entry_conditions, exit_conditions)
         data = generate_multi_condition_signals(data, entry_conditions, exit_conditions, entry_logic, exit_logic)
+    elif strategy_complexity == "multi_ticker":
+        # Multi-ticker strategy - use actual column names from data
+        actual_tickers = []
+        for ticker in tickers:
+            # Find the actual ticker names in the data columns (e.g., AAPL_1, AAPL_2)
+            ticker_columns = [col for col in data.columns if col.startswith(f'{ticker}_') and col.endswith('_Close')]
+            for col in ticker_columns:
+                actual_ticker = col.replace('_Close', '')
+                if actual_ticker not in actual_tickers:  # Avoid duplicates
+                    actual_tickers.append(actual_ticker)
+        
+        print(f"📊 Original tickers: {tickers}")
+        print(f"📊 Actual ticker columns: {actual_tickers}")
+        
+        data = calculate_multi_ticker_indicators(data, strategy_data, actual_tickers)
+        data = generate_multi_ticker_signals(data, strategy_data, actual_tickers)
     else:
         print("❌ Unsupported strategy complexity for execution")
         return
     
     # Step 5: Execute Strategy based on user choice
-    if strategy_type == "long":
+    if strategy_complexity == "multi_ticker":
+        # Multi-ticker execution - update strategy_data with actual tickers
+        # Create proper allocations and trade_sizes for actual tickers
+        original_allocations = strategy_data['allocations'].copy()
+        original_trade_sizes = strategy_data['trade_sizes'].copy()
+        
+        # Create new allocations and trade_sizes for actual tickers
+        new_allocations = {}
+        new_trade_sizes = {}
+        ticker_mapping = {}
+        
+        original_ticker_list = list(original_allocations.keys())
+        
+        for i, actual_ticker in enumerate(actual_tickers):
+            # Map to original ticker (cycling through if more actual than original)
+            original_ticker = original_ticker_list[i % len(original_ticker_list)]
+            ticker_mapping[actual_ticker] = original_ticker
+            
+            # Copy allocation and trade size
+            new_allocations[actual_ticker] = original_allocations[original_ticker]
+            new_trade_sizes[actual_ticker] = original_trade_sizes[original_ticker]
+        
+        print(f"📊 Ticker mapping: {ticker_mapping}")
+        print(f"📊 New allocations: {new_allocations}")
+        
+        # Update strategy_data
+        strategy_data['tickers'] = actual_tickers
+        strategy_data['allocations'] = new_allocations
+        strategy_data['trade_sizes'] = new_trade_sizes
+        strategy_data['ticker_mapping'] = ticker_mapping
+        data, trades = execute_multi_ticker_strategy(data, strategy_data, strategy_type)
+    elif strategy_type == "long":
         data, trades = execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
     elif strategy_type == "short":
         data, trades = execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)

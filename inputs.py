@@ -693,6 +693,94 @@ def download_and_prepare_data(ticker, period="5y", interval="4h"):
         print("   - 15-minute data: up to 60 days")
         return None
 
+def download_multi_ticker_data(tickers, period, interval):
+    """Download and prepare data for multiple tickers with unified structure"""
+    print(f"\n📊 DOWNLOADING MULTI-TICKER DATA")
+    print("="*50)
+    print(f"📈 Tickers: {', '.join(tickers)}")
+    print(f"📅 Period: {period}, Interval: {interval}")
+    print("="*50)
+    
+    try:
+        import yfinance as yf
+        import pandas as pd
+        
+        ticker_data = {}
+        all_dates = set()
+        
+        # Download data for each ticker
+        for ticker in tickers:
+            print(f"\n📊 Downloading {ticker}...")
+            stock = yf.Ticker(ticker)
+            data = stock.history(period=period, interval=interval)
+            
+            if data.empty:
+                print(f"❌ No data found for {ticker}")
+                return None
+            
+            # Reset index to make Date a column
+            data.reset_index(inplace=True)
+            
+            # Handle different date formats and normalize timezone
+            if 'Date' in data.columns:
+                data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None)
+            elif 'Datetime' in data.columns:
+                data['Date'] = pd.to_datetime(data['Datetime']).dt.tz_localize(None)
+                data = data.drop('Datetime', axis=1)
+            
+            ticker_data[ticker] = data
+            all_dates.update(data['Date'].dt.date)
+            
+            print(f"  ✅ {ticker}: {len(data)} data points")
+        
+        # Create unified DataFrame with all dates
+        all_dates = sorted(list(all_dates))
+        unified_data = pd.DataFrame({'Date': pd.to_datetime(all_dates)})
+        
+        print(f"\n🔄 Creating unified data structure...")
+        
+        # Add ticker-prefixed columns with unique identifiers for duplicates
+        ticker_counter = {}
+        for ticker in tickers:
+            # Handle duplicate tickers by adding a counter
+            if ticker in ticker_counter:
+                ticker_counter[ticker] += 1
+                unique_ticker = f"{ticker}_{ticker_counter[ticker]}"
+            else:
+                ticker_counter[ticker] = 1
+                unique_ticker = f"{ticker}_1"
+            
+            ticker_df = ticker_data[ticker].copy()
+            
+            # Merge with unified data using unique ticker names
+            ticker_columns = {
+                'Open': f'{unique_ticker}_Open',
+                'High': f'{unique_ticker}_High', 
+                'Low': f'{unique_ticker}_Low',
+                'Close': f'{unique_ticker}_Close',
+                'Volume': f'{unique_ticker}_Volume'
+            }
+            
+            ticker_df = ticker_df.rename(columns=ticker_columns)
+            ticker_df = ticker_df[['Date'] + list(ticker_columns.values())]
+            
+            unified_data = unified_data.merge(ticker_df, on='Date', how='left')
+        
+        # Forward fill missing values (for different market hours)
+        unified_data = unified_data.fillna(method='ffill')
+        
+        # Drop rows where any ticker has no data
+        unified_data = unified_data.dropna()
+        
+        print(f"✅ Unified data created: {len(unified_data)} rows")
+        print(f"📊 Columns: {list(unified_data.columns)}")
+        
+        return unified_data
+        
+    except Exception as e:
+        print(f"❌ Error downloading multi-ticker data: {str(e)}")
+        return None
+
 def get_number_of_conditions(condition_type):
     """Get number of conditions from user"""
     print(f"\n--- {condition_type.upper()} CONDITIONS ---")
@@ -821,58 +909,90 @@ def get_total_capital():
         except ValueError:
             return 10000
 
-def get_allocation_percentages(tickers):
-    """Get allocation percentages for each ticker"""
-    print(f"\n--- ALLOCATION PERCENTAGES ---")
-    print("Enter percentage allocation for each ticker (must total 100%):")
+def get_allocation_percentages(tickers, total_capital):
+    """Get allocation percentages for each ticker with better UX"""
+    print(f"\n💰 CAPITAL ALLOCATION ACROSS TICKERS")
+    print("="*50)
+    print(f"📊 Total Portfolio Capital: ${total_capital:,.2f}")
+    print("💡 TIP: Allocate percentages that sum to 100%")
+    print("📈 Example: AAPL=60%, MSFT=40%")
+    print("="*50)
     
     allocations = {}
-    total_percentage = 0
+    total_allocated = 0
     
     for i, ticker in enumerate(tickers):
         while True:
             try:
-                user_input = input(f"{ticker} allocation (%) [default: 100]: ").strip()
-                if not user_input:  # Default to 100%
-                    percentage = 100.0
+                if i == len(tickers) - 1:  # Last ticker gets remaining percentage
+                    remaining = 100 - total_allocated
+                    print(f"\n📊 {ticker} (Final ticker)")
+                    allocation_input = input(f"Allocation percentage [default: {remaining:.1f}%]: ").strip()
+                    allocation = float(allocation_input or str(remaining))
                 else:
-                    percentage = float(user_input)
+                    print(f"\n📊 {ticker}")
+                    suggested = round(100 / len(tickers), 1)  # Equal allocation suggestion
+                    allocation_input = input(f"Allocation percentage [suggested: {suggested}%]: ").strip()
+                    allocation = float(allocation_input or str(suggested))
                 
-                if 0 <= percentage <= 100:
-                    allocations[ticker] = percentage
-                    total_percentage += percentage
+                if 0 < allocation <= (100 - total_allocated + (allocation if i == len(tickers) - 1 else 0)):
+                    allocations[ticker] = allocation / 100  # Convert to decimal
+                    dollar_amount = total_capital * (allocation / 100)
+                    print(f"  ✅ {ticker}: {allocation:.1f}% = ${dollar_amount:,.2f}")
+                    total_allocated += allocation
                     break
                 else:
-                    print("❌ Please enter a percentage between 0 and 100!")
+                    max_allowed = 100 - total_allocated
+                    print(f"❌ Maximum available allocation: {max_allowed:.1f}%")
             except ValueError:
-                print("❌ Please enter a valid number!")
+                print("❌ Please enter a valid number")
     
-    # Check if total is 100%
-    if abs(total_percentage - 100.0) > 0.01:
-        print("❌ Total allocation must equal 100%! Please re-enter allocations:")
-        return get_allocation_percentages(tickers)
+    # Validate total allocation
+    if abs(total_allocated - 100) > 0.01:  # Allow small rounding errors
+        print(f"\n❌ Total allocation is {total_allocated:.1f}%, must equal 100%")
+        print("🔄 Let's try again...")
+        return get_allocation_percentages(tickers, total_capital)  # Retry
     
     return allocations
 
-def get_trade_size_percentages(tickers):
-    """Get trade size percentages for each ticker"""
-    print(f"\n--- TRADE SIZE PERCENTAGES ---")
-    print("Enter percentage of allocated capital to use per trade for each ticker:")
-    print("💡 Example: 10% means each trade uses 10% of that ticker's allocated capital")
+def get_trade_size_percentages(tickers, allocations, total_capital):
+    """Get trade size percentages for each ticker with better UX"""
+    print(f"\n📊 PER-TICKER TRADING ALLOCATION")
+    print("="*50)
+    print("💡 Define how much of each ticker's capital to use per trade")
+    print("📈 Example: 20% means each trade uses 20% of that ticker's allocated capital")
+    print("⚠️  Higher % = Bigger positions but fewer trades possible")
+    print("="*50)
     
     trade_sizes = {}
     
     for ticker in tickers:
+        ticker_capital = total_capital * allocations[ticker]
+        print(f"\n📊 {ticker} Trading Rules")
+        print(f"  💰 Allocated Capital: ${ticker_capital:,.2f}")
+        
         while True:
             try:
-                percentage = float(input(f"{ticker} trade size (%) [default: 10]: ").strip() or "10")
+                trade_input = input(f"  📈 Trade size percentage [default: 20%]: ").strip()
+                percentage = float(trade_input or "20")
+                
                 if 0 < percentage <= 100:
-                    trade_sizes[ticker] = percentage
+                    trade_amount = ticker_capital * (percentage / 100)
+                    max_trades = int(ticker_capital / trade_amount)
+                    
+                    print(f"  ✅ {ticker}: {percentage:.1f}% = ${trade_amount:,.2f} per trade")
+                    print(f"  📊 Maximum simultaneous trades: {max_trades}")
+                    
+                    trade_sizes[ticker] = {
+                        'percentage': percentage / 100,  # Convert to decimal
+                        'amount_per_trade': trade_amount,
+                        'max_trades': max_trades
+                    }
                     break
                 else:
-                    return 10
+                    print("  ❌ Please enter a percentage between 0 and 100")
             except ValueError:
-                print("❌ Please enter a valid number!")
+                print("  ❌ Please enter a valid number")
     
     return trade_sizes
 
@@ -1063,13 +1183,14 @@ def get_multi_ticker_multi_strategy_inputs():
     }
 
 def get_multi_ticker_inputs():
-    """Get user inputs for multi-ticker trading strategy"""
-    print("\n" + "="*60)
-    print("MULTI-TICKER PORTFOLIO STRATEGY")
-    print("="*60)
-    print("💡 TIP: Diversify your portfolio across multiple stocks!")
-    print("Example: 40% AAPL, 60% MSFT with same strategy")
-    print("="*60)
+    """Get user inputs for multi-ticker trading strategy (Option A: Same Strategy)"""
+    print("\n" + "="*70)
+    print("🎯 MULTI-TICKER PORTFOLIO STRATEGY (SAME STRATEGY)")
+    print("="*70)
+    print("💡 TIP: Diversify your portfolio across multiple stocks with the same strategy!")
+    print("📊 Example: 60% AAPL + 40% MSFT, both using SMA(10) > SMA(20)")
+    print("💰 Each ticker gets its own capital allocation and trading rules")
+    print("="*70)
     
     # Number of tickers
     num_tickers = get_number_of_tickers()
@@ -1080,11 +1201,11 @@ def get_multi_ticker_inputs():
     # Total capital
     total_capital = get_total_capital()
     
-    # Allocation percentages
-    allocations = get_allocation_percentages(tickers)
+    # Allocation percentages (improved with capital display)
+    allocations = get_allocation_percentages(tickers, total_capital)
     
-    # Trade size percentages
-    trade_sizes = get_trade_size_percentages(tickers)
+    # Trade size percentages (improved with detailed breakdown)
+    trade_sizes = get_trade_size_percentages(tickers, allocations, total_capital)
     
     # Time interval selection
     period, interval = get_time_interval_inputs()
@@ -1184,8 +1305,28 @@ def get_multi_ticker_inputs():
         
         exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
         
+        # SL/TP Configuration (same for all tickers)
+        sl_tp_config = get_sl_tp_configuration()
+        
+        # Final Summary
+        print(f"\n{'='*70}")
+        print("📊 MULTI-TICKER STRATEGY SUMMARY")
+        print("="*70)
+        print(f"🎯 Strategy Type: Multi-Ticker (Same Strategy)")
+        print(f"📈 Tickers: {', '.join(tickers)}")
+        print(f"💰 Total Capital: ${total_capital:,.2f}")
+        print(f"📊 Strategy: {entry_strategy} (same for all tickers)")
+        print(f"🛡️ SL/TP: {'Enabled' if sl_tp_config['enabled'] else 'Disabled'}")
+        
+        print(f"\n💰 CAPITAL ALLOCATION:")
+        for ticker in tickers:
+            ticker_capital = total_capital * allocations[ticker]
+            trade_amount = trade_sizes[ticker]['amount_per_trade']
+            print(f"  📈 {ticker}: {allocations[ticker]*100:.1f}% = ${ticker_capital:,.2f} (${trade_amount:,.2f}/trade)")
+        print("="*70)
+        
         return {
-            'type': 'single',
+            'type': 'multi_ticker',
             'tickers': tickers,
             'total_capital': total_capital,
             'allocations': allocations,
@@ -1209,7 +1350,8 @@ def get_multi_ticker_inputs():
             'exit_comp2_params': exit_comp2_params,
             'exit_comp2_candles_ago': exit_comp2_candles_ago,
             'entry_strategy': entry_strategy,
-            'exit_strategy': exit_strategy
+            'exit_strategy': exit_strategy,
+            'sl_tp_config': sl_tp_config
         }
     
     else:
@@ -1244,18 +1386,55 @@ def get_multi_ticker_inputs():
         if exit_conditions is None:
             return None
         
+        # SL/TP Configuration (same for all tickers)
+        sl_tp_config = get_sl_tp_configuration()
+        
+        # Final Summary
+        print(f"\n{'='*70}")
+        print("📊 MULTI-TICKER STRATEGY SUMMARY")
+        print("="*70)
+        print(f"🎯 Strategy Type: Multi-Ticker (Same Strategy)")
+        print(f"📈 Tickers: {', '.join(tickers)}")
+        print(f"💰 Total Capital: ${total_capital:,.2f}")
+        print(f"📊 Strategy: {entry_strategy} (same for all tickers)")
+        print(f"🛡️ SL/TP: {'Enabled' if sl_tp_config['enabled'] else 'Disabled'}")
+        
+        print(f"\n💰 CAPITAL ALLOCATION:")
+        for ticker in tickers:
+            ticker_capital = total_capital * allocations[ticker]
+            trade_amount = trade_sizes[ticker]['amount_per_trade']
+            print(f"  📈 {ticker}: {allocations[ticker]*100:.1f}% = ${ticker_capital:,.2f} (${trade_amount:,.2f}/trade)")
+        print("="*70)
+        
         return {
-            'type': 'multi',
+            'type': 'multi_ticker',
             'tickers': tickers,
             'total_capital': total_capital,
             'allocations': allocations,
             'trade_sizes': trade_sizes,
             'period': period,
             'interval': interval,
-            'entry_conditions': entry_conditions,
-            'exit_conditions': exit_conditions,
-            'entry_logic': entry_logic,
-            'exit_logic': exit_logic
+            'strategy_data': {
+                'entry_comp1_type': entry_comp1_type,
+                'entry_comp1_name': entry_comp1_name,
+                'entry_comp1_params': entry_comp1_params,
+                'entry_comp1_candles_ago': entry_comp1_candles_ago,
+                'entry_strategy': entry_strategy,
+                'entry_comp2_type': entry_comp2_type,
+                'entry_comp2_name': entry_comp2_name,
+                'entry_comp2_params': entry_comp2_params,
+                'entry_comp2_candles_ago': entry_comp2_candles_ago,
+                'exit_comp1_type': exit_comp1_type,
+                'exit_comp1_name': exit_comp1_name,
+                'exit_comp1_params': exit_comp1_params,
+                'exit_comp1_candles_ago': exit_comp1_candles_ago,
+                'exit_strategy': exit_strategy,
+                'exit_comp2_type': exit_comp2_type,
+                'exit_comp2_name': exit_comp2_name,
+                'exit_comp2_params': exit_comp2_params,
+                'exit_comp2_candles_ago': exit_comp2_candles_ago
+            },
+            'sl_tp_config': sl_tp_config
         }
 
 def get_multi_strategy_inputs():

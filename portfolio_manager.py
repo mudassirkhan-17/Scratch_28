@@ -10,12 +10,15 @@ class PortfolioManager:
         """Initialize portfolio with starting cash and per-trade allocation"""
         # Your exact variables
         self.initial_cash = initial_cash           # Money we start with
+        self.original_capital = initial_cash       # Store original starting capital (never changes)
         
         # Per-trade allocation setup
         if per_trade_config:
+            self.per_trade_config = per_trade_config  # Store original config
             self.invested_amount = per_trade_config['amount_per_trade']  # Amount per trade
             self.allocation_percentage = per_trade_config['percentage']   # Percentage for display
         else:
+            self.per_trade_config = None
             self.invested_amount = initial_cash * 1.0  # Fallback: 100% (old behavior)
             self.allocation_percentage = 100.0
             
@@ -65,7 +68,14 @@ class PortfolioManager:
         }
         
         # Reset for next trade
-        self.invested_amount = self.final_cash
+        # Keep consistent per-trade amount instead of using all cash
+        self.initial_cash = self.final_cash  # Update initial cash to current value
+        if self.per_trade_config:
+            # Use original per-trade amount (e.g., $2,000), not all available cash
+            self.invested_amount = self.per_trade_config['amount_per_trade']
+        else:
+            # Fallback: use all available cash (old behavior)
+            self.invested_amount = self.final_cash
         self.remaining = 0
         self.shares_owned = 0
         self.buying_price = 0
@@ -112,7 +122,14 @@ class PortfolioManager:
         }
         
         # Reset for next trade
-        self.invested_amount = self.final_cash
+        # Keep consistent per-trade amount instead of using all cash
+        self.initial_cash = self.final_cash  # Update initial cash to current value
+        if self.per_trade_config:
+            # Use original per-trade amount (e.g., $2,000), not all available cash
+            self.invested_amount = self.per_trade_config['amount_per_trade']
+        else:
+            # Fallback: use all available cash (old behavior)
+            self.invested_amount = self.final_cash
         self.remaining = 0
         self.shares_owned = 0
         self.buying_price = 0
