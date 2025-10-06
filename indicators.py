@@ -631,8 +631,10 @@ def adaptive_price_zone(data, period=20, multiplier=0.5, baseline=0):
         multiplier=multiplier,
         baseline=baseline
     )
-    apz_values = apz_strategy.compute_values(data)
-    return apz_values
+    # compute_values returns (center, upper_zone, lower_zone) tuple
+    # We return just the center line for crossover strategies
+    center, upper_zone, lower_zone = apz_strategy.compute_values(data)
+    return center
 
 def average_price(data, period=14, upper_threshold=0.05, lower_threshold=-0.05):
     """Calculate Average Price using the library implementation"""
@@ -854,116 +856,177 @@ def calculate_indicator(data, indicator_name, params):
     if indicator_func is None:
         raise ValueError(f"Unknown indicator: {indicator_name}")
     
-    if indicator_name in ["RSI", "RSI2", "SSMA", "EMA2", "MOMENTUM", "MARKET_MOMENTUM"]:
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, upper, lower
+    if indicator_name in ["RSI", "RSI2"]:
+        # RSI with defaults: period=14, upper=70, lower=30
+        period = params[0] if len(params) >= 1 else 14
+        upper = params[1] if len(params) >= 2 else 70
+        lower = params[2] if len(params) >= 3 else 30
+        return indicator_func(data, period, upper, lower)
+    elif indicator_name in ["SSMA", "EMA2", "MOMENTUM"]:
+        # Oscillators with defaults: period, upper=1.0, lower=-1.0
+        period = params[0] if len(params) >= 1 else 14
+        upper = params[1] if len(params) >= 2 else 1.0
+        lower = params[2] if len(params) >= 3 else -1.0
+        return indicator_func(data, period, upper, lower)
+    elif indicator_name == "MARKET_MOMENTUM":
+        # Market momentum with defaults: period=14, upper=0.05, lower=-0.05
+        period = params[0] if len(params) >= 1 else 14
+        upper = params[1] if len(params) >= 2 else 0.05
+        lower = params[2] if len(params) >= 3 else -0.05
+        return indicator_func(data, period, upper, lower)
     elif indicator_name in ["OBV"]:
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (baseline, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # baseline, upper, lower
+        # OBV with defaults: baseline=0, upper=100000, lower=-100000
+        baseline = params[0] if len(params) >= 1 else 0
+        upper = params[1] if len(params) >= 2 else 100000
+        lower = params[2] if len(params) >= 3 else -100000
+        return indicator_func(data, baseline, upper, lower)
     elif indicator_name in ["TYPICAL_PRICE", "VWAP"]:
-        if len(params) < 1:
-            raise ValueError(f"Indicator {indicator_name} requires 1 parameter (threshold), got {len(params)}")
-        return indicator_func(data, params[0])  # threshold only
+        # Price indicators with default threshold=0.01
+        threshold = params[0] if len(params) >= 1 else 0.01
+        return indicator_func(data, threshold)
     elif indicator_name == "ALL_MA":
         if len(params) < 4:
             raise ValueError(f"Indicator {indicator_name} requires 4 parameters (short, medium, long, threshold), got {len(params)}")
         return indicator_func(data, params[0], params[1], params[2], params[3])  # short, medium, long, threshold
     elif indicator_name == "DEMA":
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, distance_threshold), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # period, distance_threshold
+        # DEMA with defaults: period=20, distance_threshold=0.01
+        period = params[0] if len(params) >= 1 else 20
+        distance_threshold = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, period, distance_threshold)
     elif indicator_name == "HULL_MA":
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, price_threshold), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # period, price_threshold
+        # Hull MA with defaults: period=14, price_threshold=0.01
+        period = params[0] if len(params) >= 1 else 14
+        price_threshold = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, period, price_threshold)
     elif indicator_name == "KAMA":
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (period, fast, slow, distance), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # period, fast, slow, distance
+        # KAMA with defaults: period=10, fast=2, slow=30, distance=0.01
+        period = params[0] if len(params) >= 1 else 10
+        fast = params[1] if len(params) >= 2 else 2
+        slow = params[2] if len(params) >= 3 else 30
+        distance = params[3] if len(params) >= 4 else 0.01
+        return indicator_func(data, period, fast, slow, distance)
     elif indicator_name == "JMA":
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (period, phase, power, distance), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # period, phase, power, distance
+        # JMA with defaults: period=20, phase=0, power=2, distance=0.01
+        period = params[0] if len(params) >= 1 else 20
+        phase = params[1] if len(params) >= 2 else 0
+        power = params[2] if len(params) >= 3 else 2
+        distance = params[3] if len(params) >= 4 else 0.01
+        return indicator_func(data, period, phase, power, distance)
     elif indicator_name == "FRAMA":
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper_div, lower_div), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, upper_div, lower_div
+        # FRAMA with defaults: period=20, upper_div=0.02, lower_div=-0.02
+        period = params[0] if len(params) >= 1 else 20
+        upper_div = params[1] if len(params) >= 2 else 0.02
+        lower_div = params[2] if len(params) >= 3 else -0.02
+        return indicator_func(data, period, upper_div, lower_div)
     elif indicator_name in ["SMA", "EMA", "SSMA", "EMA2"]:
         if len(params) < 1:
             raise ValueError(f"Indicator {indicator_name} requires 1 parameter (period), got {len(params)}")
         return indicator_func(data, params[0])  # period only
     elif indicator_name == "SEMA":
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (period, baseline, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # period, baseline, upper, lower
+        # SEMA with defaults: period=20, baseline=0, upper=1.0, lower=-1.0
+        period = params[0] if len(params) >= 1 else 20
+        baseline = params[1] if len(params) >= 2 else 0
+        upper = params[2] if len(params) >= 3 else 1.0
+        lower = params[3] if len(params) >= 4 else -1.0
+        return indicator_func(data, period, baseline, upper, lower)
     elif indicator_name == "TRIANGULAR_MA":
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, threshold_percentage), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # period, threshold_percentage
+        # Triangular MA with defaults: period=20, threshold_percentage=0.01
+        period = params[0] if len(params) >= 1 else 20
+        threshold_percentage = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, period, threshold_percentage)
     elif indicator_name == "T3_MA":
-        if len(params) < 5:
-            raise ValueError(f"Indicator {indicator_name} requires 5 parameters (period, v, price_col, pos, neg), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3], params[4])  # period, v, price_col, pos, neg
+        # T3 MA with defaults: period=10, v=0.7, price_col='Close', pos=0.02, neg=-0.02
+        period = params[0] if len(params) >= 1 else 10
+        v = params[1] if len(params) >= 2 else 0.7
+        price_col = params[2] if len(params) >= 3 else 'Close'
+        pos = params[3] if len(params) >= 4 else 0.02
+        neg = params[4] if len(params) >= 5 else -0.02
+        return indicator_func(data, period, v, price_col, pos, neg)
     elif indicator_name in ["ZLEMA", "ZLSMA", "WMA", "VWMA"]:
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, deviation_threshold), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # period, deviation_threshold
+        # Zero lag/weighted MAs with defaults: period, deviation_threshold=0.01
+        period = params[0] if len(params) >= 1 else 14
+        deviation_threshold = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, period, deviation_threshold)
     elif indicator_name == "MCGINLEY_DYNAMIC":
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, threshold), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # period, threshold
+        # McGinley with defaults: period=20, threshold=0.01
+        period = params[0] if len(params) >= 1 else 20
+        threshold = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, period, threshold)
     elif indicator_name in ["EVMA"]:
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, upper, lower
+        # Elastic Volume MA with defaults: period=20, upper=1.0, lower=-1.0
+        period = params[0] if len(params) >= 1 else 20
+        upper = params[1] if len(params) >= 2 else 1.0
+        lower = params[2] if len(params) >= 3 else -1.0
+        return indicator_func(data, period, upper, lower)
     elif indicator_name == "SINE_WMA":
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (period, baseline, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # period, baseline, upper, lower
+        # Sine WMA with defaults: period=20, baseline=0, upper=1.0, lower=-1.0
+        period = params[0] if len(params) >= 1 else 20
+        baseline = params[1] if len(params) >= 2 else 0
+        upper = params[2] if len(params) >= 3 else 1.0
+        lower = params[3] if len(params) >= 4 else -1.0
+        return indicator_func(data, period, baseline, upper, lower)
     elif indicator_name == "PASCAL_WMA":
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, lower, upper), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, lower, upper
+        # Pascal WMA with defaults: period=20, lower=-1.0, upper=1.0
+        period = params[0] if len(params) >= 1 else 20
+        lower = params[1] if len(params) >= 2 else -1.0
+        upper = params[2] if len(params) >= 3 else 1.0
+        return indicator_func(data, period, lower, upper)
     elif indicator_name == "SYMMETRIC_WMA":
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (period, price_col, pos, neg), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # period, price_col, pos, neg
+        # Symmetric WMA with defaults: period=20, price_col='Close', pos=0.02, neg=-0.02
+        period = params[0] if len(params) >= 1 else 20
+        price_col = params[1] if len(params) >= 2 else 'Close'
+        pos = params[2] if len(params) >= 3 else 0.02
+        neg = params[3] if len(params) >= 4 else -0.02
+        return indicator_func(data, period, price_col, pos, neg)
     elif indicator_name == "FIBONACCI_WMA":
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, upper, lower
+        # Fibonacci WMA with defaults: period=20, upper=1.0, lower=-1.0
+        period = params[0] if len(params) >= 1 else 20
+        upper = params[1] if len(params) >= 2 else 1.0
+        lower = params[2] if len(params) >= 3 else -1.0
+        return indicator_func(data, period, upper, lower)
     elif indicator_name == "HOLT_WINTER_MA":
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (alpha, beta, deviation), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # alpha, beta, deviation
+        # Holt-Winter MA with defaults: alpha=0.3, beta=0.1, deviation=0.01
+        alpha = params[0] if len(params) >= 1 else 0.3
+        beta = params[1] if len(params) >= 2 else 0.1
+        deviation = params[2] if len(params) >= 3 else 0.01
+        return indicator_func(data, alpha, beta, deviation)
     elif indicator_name == "HULL_EMA":
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, deviation), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # period, deviation
+        # Hull EMA with defaults: period=20, deviation=0.01
+        period = params[0] if len(params) >= 1 else 20
+        deviation = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, period, deviation)
     elif indicator_name == "ALMA":
-        if len(params) < 6:
-            raise ValueError(f"Indicator {indicator_name} requires 6 parameters (period, offset, sigma, baseline, lower, upper), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3], params[4], params[5])  # period, offset, sigma, baseline, lower, upper
+        # ALMA with defaults: period=20, offset=0.85, sigma=6, baseline=0, lower=-1, upper=1
+        period = params[0] if len(params) >= 1 else 20
+        offset = params[1] if len(params) >= 2 else 0.85
+        sigma = params[2] if len(params) >= 3 else 6
+        baseline = params[3] if len(params) >= 4 else 0
+        lower = params[4] if len(params) >= 5 else -1
+        upper = params[5] if len(params) >= 6 else 1
+        return indicator_func(data, period, offset, sigma, baseline, lower, upper)
     # Volume Indicators - Standard 3 parameter indicators
-    elif indicator_name in ["AOBV", "FVE", "NVI", "PVI", "PVR", "PVT", "PV", "VAMA", "VFI", "VZO"]:
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, upper, lower
+    elif indicator_name in ["FVE", "NVI", "PVI", "PVR", "PVT", "PV", "VAMA", "VZO"]:
+        # Volume indicators with defaults: period/baseline, upper, lower
+        param1 = params[0] if len(params) >= 1 else (20 if indicator_name != "PVT" else 0)
+        upper = params[1] if len(params) >= 2 else 1000
+        lower = params[2] if len(params) >= 3 else -1000
+        return indicator_func(data, param1, upper, lower)
     # Volume Indicators - Special parameter requirements
     elif indicator_name == "VPT":  # VolumePriceTrendStrategies(ma_period, threshold_percentage)
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (ma_period, threshold_percentage), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # ma_period, threshold_percentage
+        # VPT with defaults: ma_period=20, threshold_percentage=0.01
+        ma_period = params[0] if len(params) >= 1 else 20
+        threshold_percentage = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, ma_period, threshold_percentage)
     elif indicator_name == "VP":  # VolumeProfileStrategies(period, bin_size, value_area_percentage)
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, bin_size, value_area_percentage), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, bin_size, value_area_percentage
+        # VP with defaults: period=20, bin_size=10, value_area_percentage=0.7
+        period = params[0] if len(params) >= 1 else 20
+        bin_size = params[1] if len(params) >= 2 else 10
+        value_area_percentage = params[2] if len(params) >= 3 else 0.7
+        return indicator_func(data, period, bin_size, value_area_percentage)
     elif indicator_name == "WOBV":  # WeightedOnBalanceVolumeStrategies(ma_period)
-        if len(params) < 1:
-            raise ValueError(f"Indicator {indicator_name} requires 1 parameter (ma_period), got {len(params)}")
-        return indicator_func(data, params[0])  # ma_period
+        # WOBV with defaults: ma_period=20
+        ma_period = params[0] if len(params) >= 1 else 20
+        return indicator_func(data, ma_period)
     elif indicator_name == "EV_MACD":
         if len(params) < 5:
             raise ValueError(f"Indicator {indicator_name} requires 5 parameters (fast, slow, signal, upper, lower), got {len(params)}")
@@ -973,56 +1036,93 @@ def calculate_indicator(data, indicator_name, params):
             raise ValueError(f"Indicator {indicator_name} requires 4 parameters (fast_period, slow_period, signal_period, threshold), got {len(params)}")
         return indicator_func(data, params[0], params[1], params[2], params[3])  # fast_period, slow_period, signal_period, threshold
     elif indicator_name == "KVO":
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (fast, slow, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # fast, slow, upper, lower
+        # KVO with defaults: fast=34, slow=55, upper=1000, lower=-1000
+        fast = params[0] if len(params) >= 1 else 34
+        slow = params[1] if len(params) >= 2 else 55
+        upper = params[2] if len(params) >= 3 else 1000
+        lower = params[3] if len(params) >= 4 else -1000
+        return indicator_func(data, fast, slow, upper, lower)
     elif indicator_name == "PVO":
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (fast, slow, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # fast, slow, upper, lower
+        # PVO with defaults: fast=12, slow=26, upper=10, lower=-10
+        fast = params[0] if len(params) >= 1 else 12
+        slow = params[1] if len(params) >= 2 else 26
+        upper = params[2] if len(params) >= 3 else 10
+        lower = params[3] if len(params) >= 4 else -10
+        return indicator_func(data, fast, slow, upper, lower)
     # Price Indicators - Standard 3 parameter indicators
     elif indicator_name in ["AP", "DP", "DPO", "IP", "MP", "PD", "WCP"]:
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, upper, lower
+        # Price indicators with defaults: period=14, upper=1.0, lower=-1.0
+        period = params[0] if len(params) >= 1 else 14
+        upper = params[1] if len(params) >= 2 else 1.0
+        lower = params[2] if len(params) >= 3 else -1.0
+        return indicator_func(data, period, upper, lower)
     # Price Indicators - Special parameter requirements
     elif indicator_name == "APZ":  # AdaptivePriceZoneStrategies(period, multiplier, baseline)
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, multiplier, baseline), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, multiplier, baseline
+        # APZ with defaults: period=20, multiplier=2.0, baseline=0
+        period = params[0] if len(params) >= 1 else 20
+        multiplier = params[1] if len(params) >= 2 else 2.0
+        baseline = params[2] if len(params) >= 3 else 0
+        return indicator_func(data, period, multiplier, baseline)
     elif indicator_name == "MPP":  # MidpointPricePeriodStrategies(period, threshold)
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, threshold), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # period, threshold
+        # MPP with defaults: period=14, threshold=0.01
+        period = params[0] if len(params) >= 1 else 14
+        threshold = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, period, threshold)
     elif indicator_name in ["APO", "PPO"]:
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (fast, slow, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # fast, slow, upper, lower
+        # APO/PPO with defaults: fast=12, slow=26, upper=1.0, lower=-1.0
+        fast = params[0] if len(params) >= 1 else 12
+        slow = params[1] if len(params) >= 2 else 26
+        upper = params[2] if len(params) >= 3 else 1.0
+        lower = params[3] if len(params) >= 4 else -1.0
+        return indicator_func(data, fast, slow, upper, lower)
     # Trend Indicators
     elif indicator_name == "ADX":
-        if len(params) < 2:
-            raise ValueError(f"Indicator {indicator_name} requires 2 parameters (period, adx_threshold), got {len(params)}")
-        return indicator_func(data, params[0], params[1])  # period, adx_threshold
-    elif indicator_name in ["CMO", "PDI", "MDI", "PDM", "MDM", "MBB"]:
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (period, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # period, upper, lower
+        # ADX with defaults: period=14, adx_threshold=25
+        period = params[0] if len(params) >= 1 else 14
+        adx_threshold = params[1] if len(params) >= 2 else 25
+        return indicator_func(data, period, adx_threshold)
+    elif indicator_name in ["CMO", "PDI", "MDI", "PDM", "MDM"]:
+        # Directional indicators with defaults: period=14, upper=25, lower=-25
+        period = params[0] if len(params) >= 1 else 14
+        upper = params[1] if len(params) >= 2 else 25
+        lower = params[2] if len(params) >= 3 else -25
+        return indicator_func(data, period, upper, lower)
+    elif indicator_name == "MBB":
+        # Momentum Breakout Bands with defaults: period=20, upper=2.0, lower=-2.0
+        period = params[0] if len(params) >= 1 else 20
+        upper = params[1] if len(params) >= 2 else 2.0
+        lower = params[2] if len(params) >= 3 else -2.0
+        return indicator_func(data, period, upper, lower)
     elif indicator_name == "DM":
-        if len(params) < 4:
-            raise ValueError(f"Indicator {indicator_name} requires 4 parameters (period, baseline, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3])  # period, baseline, upper, lower
+        # Directional Movement with defaults: period=14, baseline=0, upper=25, lower=-25
+        period = params[0] if len(params) >= 1 else 14
+        baseline = params[1] if len(params) >= 2 else 0
+        upper = params[2] if len(params) >= 3 else 25
+        lower = params[3] if len(params) >= 4 else -25
+        return indicator_func(data, period, baseline, upper, lower)
     elif indicator_name == "TS":
-        if len(params) < 3:
-            raise ValueError(f"Indicator {indicator_name} requires 3 parameters (short, long, threshold), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2])  # short, long, threshold
+        # Trend Signals with defaults: short=12, long=26, threshold=0.01
+        short = params[0] if len(params) >= 1 else 12
+        long = params[1] if len(params) >= 2 else 26
+        threshold = params[2] if len(params) >= 3 else 0.01
+        return indicator_func(data, short, long, threshold)
     elif indicator_name == "STC":
-        if len(params) < 6:
-            raise ValueError(f"Indicator {indicator_name} requires 6 parameters (fast, slow, cycle, baseline, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3], params[4], params[5])  # fast, slow, cycle, baseline, upper, lower
+        # Schaff Trend Cycle with defaults: fast=23, slow=50, cycle=10, baseline=50, upper=75, lower=25
+        fast = params[0] if len(params) >= 1 else 23
+        slow = params[1] if len(params) >= 2 else 50
+        cycle = params[2] if len(params) >= 3 else 10
+        baseline = params[3] if len(params) >= 4 else 50
+        upper = params[4] if len(params) >= 5 else 75
+        lower = params[5] if len(params) >= 6 else 25
+        return indicator_func(data, fast, slow, cycle, baseline, upper, lower)
     elif indicator_name == "WTO":
-        if len(params) < 5:
-            raise ValueError(f"Indicator {indicator_name} requires 5 parameters (period1, period2, signal, upper, lower), got {len(params)}")
-        return indicator_func(data, params[0], params[1], params[2], params[3], params[4])  # period1, period2, signal, upper, lower
+        # Wave Trend Oscillator with defaults: period1=10, period2=3, signal=3, upper=60, lower=-60
+        period1 = params[0] if len(params) >= 1 else 10
+        period2 = params[1] if len(params) >= 2 else 3
+        signal = params[2] if len(params) >= 3 else 3
+        upper = params[3] if len(params) >= 4 else 60
+        lower = params[4] if len(params) >= 5 else -60
+        return indicator_func(data, period1, period2, signal, upper, lower)
     else:
         # Handle both list and dict formats for params
         if isinstance(params, dict):
