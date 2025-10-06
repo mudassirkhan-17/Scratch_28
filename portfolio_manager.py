@@ -182,13 +182,13 @@ class PortfolioManager:
         }
     
     def calculate_total_return(self):
-        """Calculate final results"""
+        """Calculate final results using original capital for accurate P&L"""
         current_value = self.final_cash if self.final_cash > 0 else self.invested_amount
-        total_profit = current_value - self.initial_cash
-        total_return_percent = (total_profit / self.initial_cash) * 100
+        total_profit = current_value - self.original_capital
+        total_return_percent = (total_profit / self.original_capital) * 100
         
         return {
-            'initial_cash': self.initial_cash,
+            'initial_cash': self.original_capital,  # Show original starting capital
             'final_value': current_value,
             'total_profit': total_profit,
             'total_return_percent': total_return_percent
