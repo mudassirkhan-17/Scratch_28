@@ -26,10 +26,16 @@ execute_strategy() --> get_strategy_direction() --> get_multi_condition_strategy
 download_data() --> calculate_multi_condition_indicators() --> generate_multi_condition_signals() --> 
 execute_[strategy_type]() --> calculate_advanced_metrics()
 
-STEP 2C: MULTI-TICKER STRATEGY FLOW
+STEP 2C: MULTI-TICKER STRATEGY FLOW (SAME STRATEGY FOR ALL TICKERS)
 execute_strategy() --> get_strategy_direction() --> get_multi_ticker_inputs() --> 
 download_multi_ticker_data() --> calculate_multi_ticker_indicators() --> 
 generate_multi_ticker_signals() --> execute_multi_ticker_strategy() --> 
+calculate_portfolio_metrics()
+
+STEP 2D: MULTI-TICKER MULTI-STRATEGY FLOW (DIFFERENT STRATEGY PER TICKER)
+execute_strategy() --> get_strategy_direction() --> get_multi_ticker_multi_strategy_inputs() --> 
+download_multi_ticker_data() --> calculate_multi_ticker_multi_strategy_indicators() --> 
+generate_multi_ticker_multi_strategy_signals() --> execute_multi_ticker_strategy() --> 
 calculate_portfolio_metrics()
 
 
@@ -50,13 +56,21 @@ MULTI-CONDITION STRATEGY PATH:
 6b. calculate_multi_condition_indicators() - Compute indicators for all conditions
 7b. generate_multi_condition_signals() - Create signals using AND/OR logic
 
-MULTI-TICKER STRATEGY PATH:
-4c. get_multi_ticker_inputs() - Collect tickers, allocations, strategies per ticker
+MULTI-TICKER STRATEGY PATH (SAME STRATEGY):
+4c. get_multi_ticker_inputs() - Collect tickers, allocations, ONE strategy for all
 5c. download_multi_ticker_data() - Download data for all tickers simultaneously
-6c. calculate_multi_ticker_indicators() - Compute indicators for each ticker
-7c. generate_multi_ticker_signals() - Create signals for each ticker independently
+6c. calculate_multi_ticker_indicators() - Compute SAME indicators for each ticker
+7c. generate_multi_ticker_signals() - Create signals using SAME strategy for each ticker
 8c. execute_multi_ticker_strategy() - Execute trades with portfolio allocation management
 9c. calculate_portfolio_metrics() - Calculate portfolio-level and per-ticker metrics
+
+MULTI-TICKER MULTI-STRATEGY PATH (DIFFERENT STRATEGY PER TICKER):
+4d. get_multi_ticker_multi_strategy_inputs() - Collect tickers, allocations, UNIQUE strategy per ticker
+5d. download_multi_ticker_data() - Download data for all tickers simultaneously (REUSE EXISTING)
+6d. calculate_multi_ticker_multi_strategy_indicators() - Compute DIFFERENT indicators per ticker
+7d. generate_multi_ticker_multi_strategy_signals() - Create signals using DIFFERENT strategy per ticker
+8d. execute_multi_ticker_strategy() - Execute trades with portfolio allocation (REUSE EXISTING)
+9d. calculate_portfolio_metrics() - Calculate portfolio-level and per-ticker metrics (REUSE EXISTING)
 
 COMMON FINAL STEPS (Single & Multi-Condition):
 8. execute_[strategy_type]() - Execute trades based on user's chosen strategy type (Long/Short/Reversal)

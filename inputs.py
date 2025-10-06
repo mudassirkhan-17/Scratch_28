@@ -1015,10 +1015,10 @@ def get_multi_ticker_multi_strategy_inputs():
     total_capital = get_total_capital()
     
     # Allocation percentages
-    allocations = get_allocation_percentages(tickers)
+    allocations = get_allocation_percentages(tickers, total_capital)
     
     # Trade size percentages
-    trade_sizes = get_trade_size_percentages(tickers)
+    trade_sizes = get_trade_size_percentages(tickers, allocations, total_capital)
     
     # Time interval selection
     period, interval = get_time_interval_inputs()
@@ -1171,15 +1171,35 @@ def get_multi_ticker_multi_strategy_inputs():
                 'exit_logic': exit_logic
             }
     
+    # Get SL/TP configuration (global for all tickers)
+    sl_tp_config = get_sl_tp_configuration()
+    
+    # Display summary
+    print(f"\n{'='*60}")
+    print("📊 MULTI-TICKER MULTI-STRATEGY SUMMARY")
+    print(f"{'='*60}")
+    print(f"💰 Total Capital: ${total_capital:,.2f}")
+    print(f"📈 Tickers: {', '.join(tickers)}")
+    print(f"📅 Period: {period}, Interval: {interval}")
+    print(f"\n📊 ALLOCATIONS:")
+    for ticker in tickers:
+        alloc_pct = allocations[ticker] * 100
+        alloc_amt = total_capital * allocations[ticker]
+        trade_amt = trade_sizes[ticker]['amount_per_trade']
+        strategy_type = ticker_strategies[ticker]['type']
+        print(f"  {ticker}: {alloc_pct:.1f}% (${alloc_amt:,.2f}) - ${trade_amt:,.2f}/trade - {strategy_type} strategy")
+    print(f"{'='*60}")
+    
     return {
-        'type': 'multi_strategy',
+        'type': 'multi_ticker_multi_strategy',
         'tickers': tickers,
         'total_capital': total_capital,
         'allocations': allocations,
         'trade_sizes': trade_sizes,
         'period': period,
         'interval': interval,
-        'ticker_strategies': ticker_strategies
+        'ticker_strategies': ticker_strategies,
+        'sl_tp_config': sl_tp_config
     }
 
 def get_multi_ticker_inputs():
