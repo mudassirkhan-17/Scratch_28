@@ -317,9 +317,9 @@ class TradeExecutor:
             'Final_Cash': info['final_cash']
         }
     
-    def get_final_results(self):
+    def get_final_results(self, current_price=None):
         """Get final trading results"""
-        results = self.portfolio.calculate_total_return()
+        results = self.portfolio.calculate_total_return(current_price)
         results['trades'] = self.trades
         results['num_trades'] = len(self.trades)
         
@@ -327,7 +327,12 @@ class TradeExecutor:
     
     def print_final_results(self, data=None):
         """Print comprehensive trading summary with advanced metrics"""
-        results = self.get_final_results()
+        # Get last price from data if available (needed for open positions)
+        current_price = None
+        if data is not None and len(data) > 0:
+            current_price = data['Close'].iloc[-1]
+        
+        results = self.get_final_results(current_price)
         
         print(f"\n📊 FINAL RESULTS:")
         print(f"Started with: ${results['initial_cash']:,.2f}")

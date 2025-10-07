@@ -67,26 +67,35 @@ def get_strategy_inputs():
     if entry_strategy is None:
         return None
     
-    # Entry Comparison 2
-    print("\nEntry Comparison 2:")
-    entry_comp2_type = get_comparison_type()
-    if entry_comp2_type is None:
-        return None
-    
-    if entry_comp2_type == ComparisonType.INDICATOR:
-        entry_comp2_name = get_indicator_selection()
-        if entry_comp2_name is None:
-            return None
-        entry_comp2_params = get_indicator_params(entry_comp2_name)
-    elif entry_comp2_type == ComparisonType.CONSTANT:
+    # Entry Comparison 2 (skip for INCREASED/DECREASED)
+    if entry_strategy in ["INCREASED", "DECREASED"]:
+        print(f"\n✅ Entry configured: {entry_comp1_name} {entry_strategy}")
+        print("(No second comparison needed for INCREASED/DECREASED)")
+        # Set dummy values for comparison 2
+        entry_comp2_type = ComparisonType.CONSTANT
         entry_comp2_name = "CONSTANT"
-        entry_comp2_params = (get_constant_value(),)
-    else:  # PRICE
-        entry_comp2_name = "PRICE"
-        entry_comp2_params = (get_price_column(),)
-    
-    # Get candles ago for entry comparison 2
-    entry_comp2_candles_ago = get_candles_ago("Entry Comparison 2")
+        entry_comp2_params = (0,)
+        entry_comp2_candles_ago = 0
+    else:
+        print("\nEntry Comparison 2:")
+        entry_comp2_type = get_comparison_type()
+        if entry_comp2_type is None:
+            return None
+        
+        if entry_comp2_type == ComparisonType.INDICATOR:
+            entry_comp2_name = get_indicator_selection()
+            if entry_comp2_name is None:
+                return None
+            entry_comp2_params = get_indicator_params(entry_comp2_name)
+        elif entry_comp2_type == ComparisonType.CONSTANT:
+            entry_comp2_name = "CONSTANT"
+            entry_comp2_params = (get_constant_value(),)
+        else:  # PRICE
+            entry_comp2_name = "PRICE"
+            entry_comp2_params = (get_price_column(),)
+        
+        # Get candles ago for entry comparison 2
+        entry_comp2_candles_ago = get_candles_ago("Entry Comparison 2")
     
     # Exit Strategy
     print("\n--- EXIT STRATEGY ---")
@@ -117,26 +126,35 @@ def get_strategy_inputs():
     if exit_strategy is None:
         return None
     
-    # Exit Comparison 2
-    print("\nExit Comparison 2:")
-    exit_comp2_type = get_comparison_type()
-    if exit_comp2_type is None:
-        return None
-    
-    if exit_comp2_type == ComparisonType.INDICATOR:
-        exit_comp2_name = get_indicator_selection()
-        if exit_comp2_name is None:
-            return None
-        exit_comp2_params = get_indicator_params(exit_comp2_name)
-    elif exit_comp2_type == ComparisonType.CONSTANT:
+    # Exit Comparison 2 (skip for INCREASED/DECREASED)
+    if exit_strategy in ["INCREASED", "DECREASED"]:
+        print(f"\n✅ Exit configured: {exit_comp1_name} {exit_strategy}")
+        print("(No second comparison needed for INCREASED/DECREASED)")
+        # Set dummy values for comparison 2
+        exit_comp2_type = ComparisonType.CONSTANT
         exit_comp2_name = "CONSTANT"
-        exit_comp2_params = (get_constant_value(),)
-    else:  # PRICE
-        exit_comp2_name = "PRICE"
-        exit_comp2_params = (get_price_column(),)
-    
-    # Get candles ago for exit comparison 2
-    exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
+        exit_comp2_params = (0,)
+        exit_comp2_candles_ago = 0
+    else:
+        print("\nExit Comparison 2:")
+        exit_comp2_type = get_comparison_type()
+        if exit_comp2_type is None:
+            return None
+        
+        if exit_comp2_type == ComparisonType.INDICATOR:
+            exit_comp2_name = get_indicator_selection()
+            if exit_comp2_name is None:
+                return None
+            exit_comp2_params = get_indicator_params(exit_comp2_name)
+        elif exit_comp2_type == ComparisonType.CONSTANT:
+            exit_comp2_name = "CONSTANT"
+            exit_comp2_params = (get_constant_value(),)
+        else:  # PRICE
+            exit_comp2_name = "PRICE"
+            exit_comp2_params = (get_price_column(),)
+        
+        # Get candles ago for exit comparison 2
+        exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
     
     return (ticker, period, interval, total_capital, per_trade_config, entry_comp1_type, entry_comp1_name, entry_comp1_params,
             entry_comp2_type, entry_comp2_name, entry_comp2_params,
@@ -1057,24 +1075,33 @@ def get_multi_ticker_multi_strategy_inputs():
             if entry_strategy is None:
                 return None
             
-            print(f"\n{ticker} Entry Comparison 2:")
-            entry_comp2_type = get_comparison_type()
-            if entry_comp2_type is None:
-                return None
-            
-            if entry_comp2_type == ComparisonType.INDICATOR:
-                entry_comp2_name = get_indicator_selection()
-                if entry_comp2_name is None:
-                    return None
-                entry_comp2_params = get_indicator_params(entry_comp2_name)
-            elif entry_comp2_type == ComparisonType.CONSTANT:
+            # Entry Comparison 2 (skip for INCREASED/DECREASED)
+            if entry_strategy in ["INCREASED", "DECREASED"]:
+                print(f"\n✅ {ticker} Entry configured: {entry_comp1_name} {entry_strategy}")
+                print("(No second comparison needed for INCREASED/DECREASED)")
+                entry_comp2_type = ComparisonType.CONSTANT
                 entry_comp2_name = "CONSTANT"
-                entry_comp2_params = (get_constant_value(),)
-            else:  # PRICE
-                entry_comp2_name = "PRICE"
-                entry_comp2_params = (get_price_column(),)
-            
-            entry_comp2_candles_ago = get_candles_ago("Entry Comparison 2")
+                entry_comp2_params = (0,)
+                entry_comp2_candles_ago = 0
+            else:
+                print(f"\n{ticker} Entry Comparison 2:")
+                entry_comp2_type = get_comparison_type()
+                if entry_comp2_type is None:
+                    return None
+                
+                if entry_comp2_type == ComparisonType.INDICATOR:
+                    entry_comp2_name = get_indicator_selection()
+                    if entry_comp2_name is None:
+                        return None
+                    entry_comp2_params = get_indicator_params(entry_comp2_name)
+                elif entry_comp2_type == ComparisonType.CONSTANT:
+                    entry_comp2_name = "CONSTANT"
+                    entry_comp2_params = (get_constant_value(),)
+                else:  # PRICE
+                    entry_comp2_name = "PRICE"
+                    entry_comp2_params = (get_price_column(),)
+                
+                entry_comp2_candles_ago = get_candles_ago("Entry Comparison 2")
             
             print(f"\n--- {ticker} EXIT STRATEGY ---")
             exit_comp1_type = get_comparison_type()
@@ -1098,24 +1125,33 @@ def get_multi_ticker_multi_strategy_inputs():
             if exit_strategy is None:
                 return None
             
-            print(f"\n{ticker} Exit Comparison 2:")
-            exit_comp2_type = get_comparison_type()
-            if exit_comp2_type is None:
-                return None
-            
-            if exit_comp2_type == ComparisonType.INDICATOR:
-                exit_comp2_name = get_indicator_selection()
-                if exit_comp2_name is None:
-                    return None
-                exit_comp2_params = get_indicator_params(exit_comp2_name)
-            elif exit_comp2_type == ComparisonType.CONSTANT:
+            # Exit Comparison 2 (skip for INCREASED/DECREASED)
+            if exit_strategy in ["INCREASED", "DECREASED"]:
+                print(f"\n✅ {ticker} Exit configured: {exit_comp1_name} {exit_strategy}")
+                print("(No second comparison needed for INCREASED/DECREASED)")
+                exit_comp2_type = ComparisonType.CONSTANT
                 exit_comp2_name = "CONSTANT"
-                exit_comp2_params = (get_constant_value(),)
-            else:  # PRICE
-                exit_comp2_name = "PRICE"
-                exit_comp2_params = (get_price_column(),)
-            
-            exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
+                exit_comp2_params = (0,)
+                exit_comp2_candles_ago = 0
+            else:
+                print(f"\n{ticker} Exit Comparison 2:")
+                exit_comp2_type = get_comparison_type()
+                if exit_comp2_type is None:
+                    return None
+                
+                if exit_comp2_type == ComparisonType.INDICATOR:
+                    exit_comp2_name = get_indicator_selection()
+                    if exit_comp2_name is None:
+                        return None
+                    exit_comp2_params = get_indicator_params(exit_comp2_name)
+                elif exit_comp2_type == ComparisonType.CONSTANT:
+                    exit_comp2_name = "CONSTANT"
+                    exit_comp2_params = (get_constant_value(),)
+                else:  # PRICE
+                    exit_comp2_name = "PRICE"
+                    exit_comp2_params = (get_price_column(),)
+                
+                exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
             
             ticker_strategies[ticker] = {
                 'type': 'single',
@@ -1265,24 +1301,33 @@ def get_multi_ticker_inputs():
         if entry_strategy is None:
             return None
         
-        print("\nEntry Comparison 2:")
-        entry_comp2_type = get_comparison_type()
-        if entry_comp2_type is None:
-            return None
-        
-        if entry_comp2_type == ComparisonType.INDICATOR:
-            entry_comp2_name = get_indicator_selection()
-            if entry_comp2_name is None:
-                return None
-            entry_comp2_params = get_indicator_params(entry_comp2_name)
-        elif entry_comp2_type == ComparisonType.CONSTANT:
+        # Entry Comparison 2 (skip for INCREASED/DECREASED)
+        if entry_strategy in ["INCREASED", "DECREASED"]:
+            print(f"\n✅ Entry configured: {entry_comp1_name} {entry_strategy}")
+            print("(No second comparison needed for INCREASED/DECREASED)")
+            entry_comp2_type = ComparisonType.CONSTANT
             entry_comp2_name = "CONSTANT"
-            entry_comp2_params = (get_constant_value(),)
-        else:  # PRICE
-            entry_comp2_name = "PRICE"
-            entry_comp2_params = (get_price_column(),)
-        
-        entry_comp2_candles_ago = get_candles_ago("Entry Comparison 2")
+            entry_comp2_params = (0,)
+            entry_comp2_candles_ago = 0
+        else:
+            print("\nEntry Comparison 2:")
+            entry_comp2_type = get_comparison_type()
+            if entry_comp2_type is None:
+                return None
+            
+            if entry_comp2_type == ComparisonType.INDICATOR:
+                entry_comp2_name = get_indicator_selection()
+                if entry_comp2_name is None:
+                    return None
+                entry_comp2_params = get_indicator_params(entry_comp2_name)
+            elif entry_comp2_type == ComparisonType.CONSTANT:
+                entry_comp2_name = "CONSTANT"
+                entry_comp2_params = (get_constant_value(),)
+            else:  # PRICE
+                entry_comp2_name = "PRICE"
+                entry_comp2_params = (get_price_column(),)
+            
+            entry_comp2_candles_ago = get_candles_ago("Entry Comparison 2")
         
         print("\n--- EXIT STRATEGY ---")
         exit_comp1_type = get_comparison_type()
@@ -1306,24 +1351,33 @@ def get_multi_ticker_inputs():
         if exit_strategy is None:
             return None
         
-        print("\nExit Comparison 2:")
-        exit_comp2_type = get_comparison_type()
-        if exit_comp2_type is None:
-            return None
-        
-        if exit_comp2_type == ComparisonType.INDICATOR:
-            exit_comp2_name = get_indicator_selection()
-            if exit_comp2_name is None:
-                return None
-            exit_comp2_params = get_indicator_params(exit_comp2_name)
-        elif exit_comp2_type == ComparisonType.CONSTANT:
+        # Exit Comparison 2 (skip for INCREASED/DECREASED)
+        if exit_strategy in ["INCREASED", "DECREASED"]:
+            print(f"\n✅ Exit configured: {exit_comp1_name} {exit_strategy}")
+            print("(No second comparison needed for INCREASED/DECREASED)")
+            exit_comp2_type = ComparisonType.CONSTANT
             exit_comp2_name = "CONSTANT"
-            exit_comp2_params = (get_constant_value(),)
-        else:  # PRICE
-            exit_comp2_name = "PRICE"
-            exit_comp2_params = (get_price_column(),)
-        
-        exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
+            exit_comp2_params = (0,)
+            exit_comp2_candles_ago = 0
+        else:
+            print("\nExit Comparison 2:")
+            exit_comp2_type = get_comparison_type()
+            if exit_comp2_type is None:
+                return None
+            
+            if exit_comp2_type == ComparisonType.INDICATOR:
+                exit_comp2_name = get_indicator_selection()
+                if exit_comp2_name is None:
+                    return None
+                exit_comp2_params = get_indicator_params(exit_comp2_name)
+            elif exit_comp2_type == ComparisonType.CONSTANT:
+                exit_comp2_name = "CONSTANT"
+                exit_comp2_params = (get_constant_value(),)
+            else:  # PRICE
+                exit_comp2_name = "PRICE"
+                exit_comp2_params = (get_price_column(),)
+            
+            exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
         
         # SL/TP Configuration (same for all tickers)
         sl_tp_config = get_sl_tp_configuration()
@@ -1876,23 +1930,32 @@ def get_single_condition_input(condition_num, signal_type="Entry"):
     # Get strategy/comparison type
     strategy = get_strategy_selection()
     
-    # Get comparison 2 (right side)
-    print(f"\n{signal_type} Condition {condition_num} - Right Side:")
-    comp2_type = get_comparison_type()
-    
-    if comp2_type == "INDICATOR":
-        comp2_name = get_indicator_selection()
-        comp2_params = get_indicator_params(comp2_name)
-    elif comp2_type == "CONSTANT":
+    # Get comparison 2 (right side) - skip for INCREASED/DECREASED
+    if strategy in ["INCREASED", "DECREASED"]:
+        print(f"\n✅ Condition {condition_num}: {comp1_name} {strategy}")
+        print("(No right side needed for INCREASED/DECREASED)")
+        # Set dummy values for comparison 2
+        comp2_type = "CONSTANT"
         comp2_name = "CONSTANT"
-        comp2_value = get_constant_value()
-        comp2_params = (comp2_value,)
-    else:  # PRICE
-        comp2_name = "PRICE"
-        comp2_params = ()
-    
-    # Get candles ago for comparison 2
-    comp2_candles_ago = get_candles_ago(f"{signal_type} Condition {condition_num} - Right Side")
+        comp2_params = (0,)
+        comp2_candles_ago = 0
+    else:
+        print(f"\n{signal_type} Condition {condition_num} - Right Side:")
+        comp2_type = get_comparison_type()
+        
+        if comp2_type == "INDICATOR":
+            comp2_name = get_indicator_selection()
+            comp2_params = get_indicator_params(comp2_name)
+        elif comp2_type == "CONSTANT":
+            comp2_name = "CONSTANT"
+            comp2_value = get_constant_value()
+            comp2_params = (comp2_value,)
+        else:  # PRICE
+            comp2_name = "PRICE"
+            comp2_params = ()
+        
+        # Get candles ago for comparison 2
+        comp2_candles_ago = get_candles_ago(f"{signal_type} Condition {condition_num} - Right Side")
     
     # Return structured condition data
     condition_data = {

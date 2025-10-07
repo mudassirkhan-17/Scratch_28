@@ -181,9 +181,28 @@ class PortfolioManager:
             'final_cash': self.final_cash
         }
     
-    def calculate_total_return(self):
+    def calculate_total_return(self, current_price=None):
         """Calculate final results using original capital for accurate P&L"""
-        current_value = self.final_cash if self.final_cash > 0 else self.invested_amount
+        
+        # Check if we have an open position
+        if self.shares_owned != 0:
+            if current_price is None:
+                raise ValueError("current_price required when position is open")
+            
+            if self.shares_owned > 0:  # LONG position
+                # Value of shares at current market price
+                position_value = self.shares_owned * current_price
+                # Total = Cash + Share Value
+                current_value = self.remaining + position_value
+            else:  # SHORT position (shares_owned < 0)
+                # Cost to buy back shares at current price
+                buyback_cost = abs(self.shares_owned) * current_price
+                # Total = Reserved Cash + Collateral - Buyback Cost
+                current_value = self.remaining + self.buying_price - buyback_cost
+        else:
+            # No position - just cash from last exit
+            current_value = self.final_cash if self.final_cash > 0 else self.initial_cash
+        
         total_profit = current_value - self.original_capital
         total_return_percent = (total_profit / self.original_capital) * 100
         
