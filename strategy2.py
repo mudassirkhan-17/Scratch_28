@@ -887,6 +887,8 @@ def execute_strategy():
     elif strategy_direction == "Short Only":
         strategy_type = "short"
         print("✅ Selected: Short Strategy")
+        print("⚠️  LIQUIDATION PROTECTION: Enabled at 100% loss on position value")
+        print("💡 If price doubles from entry, position will be auto-liquidated")
     else:  # Long/Short Reversal
         strategy_type = "reversal"
         print("✅ Selected: Long/Short Reversal Strategy")
