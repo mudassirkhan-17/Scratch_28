@@ -697,7 +697,7 @@ def generate_multi_condition_signals(data, entry_conditions, exit_conditions, en
     """Generate entry and exit signals using MultiConditionDetector"""
     print(f"\nSTEP 4: Generating multi-condition signals...")
     
-    from multicondition import MultiConditionDetector
+    from new12 import MultiConditionDetector
     
     # Create detector
     detector = MultiConditionDetector()

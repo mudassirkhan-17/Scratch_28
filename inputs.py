@@ -156,12 +156,15 @@ def get_strategy_inputs():
         # Get candles ago for exit comparison 2
         exit_comp2_candles_ago = get_candles_ago("Exit Comparison 2")
     
-    return (ticker, period, interval, total_capital, per_trade_config, entry_comp1_type, entry_comp1_name, entry_comp1_params,
+    strategy_data = (ticker, period, interval, total_capital, per_trade_config, entry_comp1_type, entry_comp1_name, entry_comp1_params,
             entry_comp2_type, entry_comp2_name, entry_comp2_params,
             exit_comp1_type, exit_comp1_name, exit_comp1_params,
             exit_comp2_type, exit_comp2_name, exit_comp2_params,
             entry_strategy, exit_strategy, entry_comp1_candles_ago, entry_comp2_candles_ago,
             exit_comp1_candles_ago, exit_comp2_candles_ago)
+    
+    # Don't save here - will save after getting SL/TP and strategy direction
+    return strategy_data
 
 def get_strategy_direction():
     """Get strategy direction selection"""
@@ -2052,3 +2055,489 @@ def get_multi_condition_strategy_inputs():
         entry_conditions,          # 9
         exit_conditions            # 10
     )
+
+
+def save_strategy_to_json(strategy_data, filename="config.json", strategy_direction="long", sl_tp_config=None):
+    """
+    Convert strategy tuple to JSON and save to file
+    
+    Args:
+        strategy_data: Tuple returned from get_strategy_inputs()
+        filename: Output JSON filename
+        strategy_direction: "long", "short", or "reversal"
+        sl_tp_config: SL/TP configuration dict
+    """
+    import json
+    
+    # Default SL/TP if not provided
+    if sl_tp_config is None:
+        sl_tp_config = {'enabled': False, 'stop_loss_percent': 0.0, 'take_profit_percent': 0.0}
+    
+    # Unpack the tuple (23 elements for single strategy)
+    (ticker, period, interval, total_capital, per_trade_config,
+     entry_comp1_type, entry_comp1_name, entry_comp1_params,
+     entry_comp2_type, entry_comp2_name, entry_comp2_params,
+     exit_comp1_type, exit_comp1_name, exit_comp1_params,
+     exit_comp2_type, exit_comp2_name, exit_comp2_params,
+     entry_strategy, exit_strategy, entry_comp1_candles_ago, entry_comp2_candles_ago,
+     exit_comp1_candles_ago, exit_comp2_candles_ago) = strategy_data
+    
+    # Helper function to convert ComparisonType to string
+    def type_to_string(comp_type):
+        if hasattr(comp_type, 'name'):
+            return comp_type.name  # Enum.name gives "INDICATOR", "CONSTANT", "PRICE"
+        return str(comp_type)
+    
+    # Build JSON structure
+    config = {
+        "mode": "single",
+        "strategy_direction": strategy_direction,
+        "basic": {
+            "ticker": ticker,
+            "period": period,
+            "interval": interval,
+            "total_capital": total_capital
+        },
+        "per_trade": {
+            "allocation_percent": per_trade_config['percentage'],
+            "amount_per_trade": per_trade_config['amount_per_trade']
+        },
+        "sl_tp": {
+            "enabled": sl_tp_config.get('enabled', False),
+            "stop_loss_percent": sl_tp_config.get('sl_value', 0.0) * 100 if sl_tp_config.get('sl_type') == 'percentage' else 0.0,
+            "take_profit_percent": sl_tp_config.get('tp_value', 0.0) * 100 if sl_tp_config.get('tp_type') == 'percentage' else 0.0,
+            "trailing_sl_enabled": sl_tp_config.get('trailing_sl_enabled', False),
+            "trailing_sl_type": sl_tp_config.get('trailing_sl_type', None),
+            "trailing_sl_percent": sl_tp_config.get('trailing_sl_value', 0.0) * 100 if sl_tp_config.get('trailing_sl_type') == 'percentage' else 0.0
+        },
+        "entry": {
+            "comp1": {
+                "type": type_to_string(entry_comp1_type),
+                "name": entry_comp1_name,
+                "params": list(entry_comp1_params),
+                "candles_ago": entry_comp1_candles_ago
+            },
+            "strategy": entry_strategy,
+            "comp2": {
+                "type": type_to_string(entry_comp2_type),
+                "name": entry_comp2_name,
+                "params": list(entry_comp2_params),
+                "candles_ago": entry_comp2_candles_ago
+            }
+        },
+        "exit": {
+            "comp1": {
+                "type": type_to_string(exit_comp1_type),
+                "name": exit_comp1_name,
+                "params": list(exit_comp1_params),
+                "candles_ago": exit_comp1_candles_ago
+            },
+            "strategy": exit_strategy,
+            "comp2": {
+                "type": type_to_string(exit_comp2_type),
+                "name": exit_comp2_name,
+                "params": list(exit_comp2_params),
+                "candles_ago": exit_comp2_candles_ago
+            }
+        }
+    }
+    
+    # Save to file with pretty formatting
+    with open(filename, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    print(f"📁 JSON structure:")
+    print(f"   Mode: {config['mode']}")
+    print(f"   Direction: {config['strategy_direction']}")
+    print(f"   Ticker: {ticker}")
+    print(f"   Entry: {entry_comp1_name} {entry_strategy} {entry_comp2_name}")
+    print(f"   Exit: {exit_comp1_name} {exit_strategy} {exit_comp2_name}")
+
+
+def save_multi_condition_to_json(strategy_data, filename="config_multi_condition.json", strategy_direction="long", sl_tp_config=None):
+    """
+    Save multi-condition strategy to JSON
+    
+    Args:
+        strategy_data: Tuple from get_multi_condition_strategy_inputs()
+        filename: Output JSON filename
+        strategy_direction: "long", "short", or "reversal"
+        sl_tp_config: SL/TP configuration dict
+    """
+    import json
+    
+    # Default SL/TP if not provided
+    if sl_tp_config is None:
+        sl_tp_config = {'enabled': False, 'sl_type': 'percentage', 'sl_value': 0.0, 'tp_type': 'percentage', 'tp_value': 0.0}
+    
+    # Unpack tuple (11 elements for multi-condition)
+    ticker, period, interval, total_capital, per_trade_config, sl_tp, condition_count, entry_logic, exit_logic, entry_conditions, exit_conditions = strategy_data
+    
+    # Build JSON structure
+    config = {
+        "mode": "multi_condition",
+        "strategy_direction": strategy_direction,
+        "basic": {
+            "ticker": ticker,
+            "period": period,
+            "interval": interval,
+            "total_capital": total_capital
+        },
+        "per_trade": {
+            "allocation_percent": per_trade_config['percentage'],
+            "amount_per_trade": per_trade_config['amount_per_trade']
+        },
+        "sl_tp": {
+            "enabled": sl_tp_config.get('enabled', False),
+            "stop_loss_percent": sl_tp_config.get('sl_value', 0.0) * 100 if sl_tp_config.get('sl_type') == 'percentage' else 0.0,
+            "take_profit_percent": sl_tp_config.get('tp_value', 0.0) * 100 if sl_tp_config.get('tp_type') == 'percentage' else 0.0,
+            "trailing_sl_enabled": sl_tp_config.get('trailing_sl_enabled', False),
+            "trailing_sl_type": sl_tp_config.get('trailing_sl_type', None),
+            "trailing_sl_percent": sl_tp_config.get('trailing_sl_value', 0.0) * 100 if sl_tp_config.get('trailing_sl_type') == 'percentage' else 0.0
+        },
+        "condition_count": condition_count,
+        "entry_logic": entry_logic,
+        "exit_logic": exit_logic,
+        "entry_conditions": [],
+        "exit_conditions": []
+    }
+    
+    # Add entry conditions
+    for condition in entry_conditions:
+        # Conditions are stored as dicts, not tuples
+        comp1_type = condition['comp1_type']
+        comp1_name = condition['comp1_name']
+        comp1_params = condition['comp1_params']
+        comp1_candles = condition['comp1_candles_ago']
+        comp2_type = condition['comp2_type']
+        comp2_name = condition['comp2_name']
+        comp2_params = condition['comp2_params']
+        comp2_candles = condition['comp2_candles_ago']
+        strategy = condition['strategy']
+        
+        config["entry_conditions"].append({
+            "comp1": {
+                "type": comp1_type.name if hasattr(comp1_type, 'name') else str(comp1_type),
+                "name": comp1_name,
+                "params": list(comp1_params) if isinstance(comp1_params, tuple) else [comp1_params],
+                "candles_ago": comp1_candles
+            },
+            "strategy": strategy,
+            "comp2": {
+                "type": comp2_type.name if hasattr(comp2_type, 'name') else str(comp2_type),
+                "name": comp2_name,
+                "params": list(comp2_params) if isinstance(comp2_params, tuple) else [comp2_params],
+                "candles_ago": comp2_candles
+            }
+        })
+    
+    # Add exit conditions
+    for condition in exit_conditions:
+        # Conditions are stored as dicts, not tuples
+        comp1_type = condition['comp1_type']
+        comp1_name = condition['comp1_name']
+        comp1_params = condition['comp1_params']
+        comp1_candles = condition['comp1_candles_ago']
+        comp2_type = condition['comp2_type']
+        comp2_name = condition['comp2_name']
+        comp2_params = condition['comp2_params']
+        comp2_candles = condition['comp2_candles_ago']
+        strategy = condition['strategy']
+        
+        config["exit_conditions"].append({
+            "comp1": {
+                "type": comp1_type.name if hasattr(comp1_type, 'name') else str(comp1_type),
+                "name": comp1_name,
+                "params": list(comp1_params) if isinstance(comp1_params, tuple) else [comp1_params],
+                "candles_ago": comp1_candles
+            },
+            "strategy": strategy,
+            "comp2": {
+                "type": comp2_type.name if hasattr(comp2_type, 'name') else str(comp2_type),
+                "name": comp2_name,
+                "params": list(comp2_params) if isinstance(comp2_params, tuple) else [comp2_params],
+                "candles_ago": comp2_candles
+            }
+        })
+    
+    # Save to file
+    with open(filename, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    print(f"📁 Multi-condition JSON saved: {condition_count} entry ({entry_logic}), {condition_count} exit ({exit_logic})")
+
+
+def save_multi_ticker_to_json(strategy_data, filename="config_multi_ticker.json", strategy_direction="long"):
+    """
+    Save multi-ticker strategy to JSON
+    
+    Args:
+        strategy_data: Dict from get_multi_ticker_inputs()
+        filename: Output JSON filename
+        strategy_direction: "long", "short", or "reversal"
+    """
+    import json
+    
+    # Extract from dict
+    tickers = strategy_data['tickers']
+    total_capital = strategy_data['total_capital']
+    allocations = strategy_data['allocations']
+    trade_sizes = strategy_data['trade_sizes']
+    period = strategy_data['period']
+    interval = strategy_data['interval']
+    sl_tp_config = strategy_data['sl_tp_config']
+    shared_strategy = strategy_data['strategy_data']
+    
+    # Unpack shared strategy (23 elements)
+    (ticker_placeholder, period_s, interval_s, total_capital_s, per_trade_config,
+     entry_comp1_type, entry_comp1_name, entry_comp1_params,
+     entry_comp2_type, entry_comp2_name, entry_comp2_params,
+     exit_comp1_type, exit_comp1_name, exit_comp1_params,
+     exit_comp2_type, exit_comp2_name, exit_comp2_params,
+     entry_strategy, exit_strategy, entry_comp1_candles_ago, entry_comp2_candles_ago,
+     exit_comp1_candles_ago, exit_comp2_candles_ago) = shared_strategy
+    
+    # Build JSON structure
+    config = {
+        "mode": "multi_ticker",
+        "strategy_direction": strategy_direction,
+        "basic": {
+            "tickers": tickers,
+            "period": period,
+            "interval": interval,
+            "total_capital": total_capital
+        },
+        "allocations": allocations,
+        "trade_sizes": trade_sizes,
+        "sl_tp": {
+            "enabled": sl_tp_config.get('enabled', False),
+            "stop_loss_percent": sl_tp_config.get('sl_value', 0.0) * 100 if sl_tp_config.get('sl_type') == 'percentage' else 0.0,
+            "take_profit_percent": sl_tp_config.get('tp_value', 0.0) * 100 if sl_tp_config.get('tp_type') == 'percentage' else 0.0,
+            "trailing_sl_enabled": sl_tp_config.get('trailing_sl_enabled', False),
+            "trailing_sl_type": sl_tp_config.get('trailing_sl_type', None),
+            "trailing_sl_percent": sl_tp_config.get('trailing_sl_value', 0.0) * 100 if sl_tp_config.get('trailing_sl_type') == 'percentage' else 0.0
+        },
+        "shared_strategy": {
+            "entry": {
+                "comp1": {
+                    "type": entry_comp1_type.name if hasattr(entry_comp1_type, 'name') else str(entry_comp1_type),
+                    "name": entry_comp1_name,
+                    "params": list(entry_comp1_params),
+                    "candles_ago": entry_comp1_candles_ago
+                },
+                "strategy": entry_strategy,
+                "comp2": {
+                    "type": entry_comp2_type.name if hasattr(entry_comp2_type, 'name') else str(entry_comp2_type),
+                    "name": entry_comp2_name,
+                    "params": list(entry_comp2_params) if isinstance(entry_comp2_params, tuple) else [entry_comp2_params],
+                    "candles_ago": entry_comp2_candles_ago
+                }
+            },
+            "exit": {
+                "comp1": {
+                    "type": exit_comp1_type.name if hasattr(exit_comp1_type, 'name') else str(exit_comp1_type),
+                    "name": exit_comp1_name,
+                    "params": list(exit_comp1_params),
+                    "candles_ago": exit_comp1_candles_ago
+                },
+                "strategy": exit_strategy,
+                "comp2": {
+                    "type": exit_comp2_type.name if hasattr(exit_comp2_type, 'name') else str(exit_comp2_type),
+                    "name": exit_comp2_name,
+                    "params": list(exit_comp2_params) if isinstance(exit_comp2_params, tuple) else [exit_comp2_params],
+                    "candles_ago": exit_comp2_candles_ago
+                }
+            }
+        }
+    }
+    
+    # Save to file
+    with open(filename, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    print(f"📁 Multi-ticker JSON saved: {len(tickers)} tickers with shared strategy")
+
+
+def save_multi_ticker_multi_to_json(strategy_data, filename="config_multi_ticker_multi.json", strategy_direction="long"):
+    """
+    Save multi-ticker multi-strategy to JSON
+    
+    Args:
+        strategy_data: Dict from get_multi_ticker_multi_strategy_inputs()
+        filename: Output JSON filename
+        strategy_direction: "long", "short", or "reversal"
+    """
+    import json
+    
+    # Extract from dict
+    tickers = strategy_data['tickers']
+    total_capital = strategy_data['total_capital']
+    allocations = strategy_data['allocations']
+    trade_sizes = strategy_data['trade_sizes']
+    period = strategy_data['period']
+    interval = strategy_data['interval']
+    sl_tp_config = strategy_data['sl_tp_config']
+    ticker_strategies = strategy_data['ticker_strategies']
+    
+    # Build JSON structure
+    config = {
+        "mode": "multi_ticker_multi",
+        "strategy_direction": strategy_direction,
+        "basic": {
+            "tickers": tickers,
+            "period": period,
+            "interval": interval,
+            "total_capital": total_capital
+        },
+        "allocations": allocations,
+        "trade_sizes": trade_sizes,
+        "sl_tp": {
+            "enabled": sl_tp_config.get('enabled', False),
+            "stop_loss_percent": sl_tp_config.get('sl_value', 0.0) * 100 if sl_tp_config.get('sl_type') == 'percentage' else 0.0,
+            "take_profit_percent": sl_tp_config.get('tp_value', 0.0) * 100 if sl_tp_config.get('tp_type') == 'percentage' else 0.0,
+            "trailing_sl_enabled": sl_tp_config.get('trailing_sl_enabled', False),
+            "trailing_sl_type": sl_tp_config.get('trailing_sl_type', None),
+            "trailing_sl_percent": sl_tp_config.get('trailing_sl_value', 0.0) * 100 if sl_tp_config.get('trailing_sl_type') == 'percentage' else 0.0
+        },
+        "ticker_strategies": {}
+    }
+    
+    # Add each ticker's unique strategy
+    for ticker, strategy_dict in ticker_strategies.items():
+        # Strategies are stored as dictionaries with 'type' key
+        strategy_type = strategy_dict.get('type', 'single')
+        
+        if strategy_type == 'single':
+            # Single-condition strategy
+            entry_comp1_type = strategy_dict['entry_comp1_type']
+            entry_comp1_name = strategy_dict['entry_comp1_name']
+            entry_comp1_params = strategy_dict['entry_comp1_params']
+            entry_comp1_candles_ago = strategy_dict['entry_comp1_candles_ago']
+            entry_comp2_type = strategy_dict['entry_comp2_type']
+            entry_comp2_name = strategy_dict['entry_comp2_name']
+            entry_comp2_params = strategy_dict['entry_comp2_params']
+            entry_comp2_candles_ago = strategy_dict['entry_comp2_candles_ago']
+            entry_strategy = strategy_dict['entry_strategy']
+            
+            exit_comp1_type = strategy_dict['exit_comp1_type']
+            exit_comp1_name = strategy_dict['exit_comp1_name']
+            exit_comp1_params = strategy_dict['exit_comp1_params']
+            exit_comp1_candles_ago = strategy_dict['exit_comp1_candles_ago']
+            exit_comp2_type = strategy_dict['exit_comp2_type']
+            exit_comp2_name = strategy_dict['exit_comp2_name']
+            exit_comp2_params = strategy_dict['exit_comp2_params']
+            exit_comp2_candles_ago = strategy_dict['exit_comp2_candles_ago']
+            exit_strategy = strategy_dict['exit_strategy']
+            
+            config["ticker_strategies"][ticker] = {
+                "type": "single",
+                "entry": {
+                    "comp1": {
+                        "type": entry_comp1_type.name if hasattr(entry_comp1_type, 'name') else str(entry_comp1_type),
+                        "name": entry_comp1_name,
+                        "params": list(entry_comp1_params) if isinstance(entry_comp1_params, tuple) else [entry_comp1_params],
+                        "candles_ago": entry_comp1_candles_ago
+                    },
+                    "strategy": entry_strategy,
+                    "comp2": {
+                        "type": entry_comp2_type.name if hasattr(entry_comp2_type, 'name') else str(entry_comp2_type),
+                        "name": entry_comp2_name,
+                        "params": list(entry_comp2_params) if isinstance(entry_comp2_params, tuple) else [entry_comp2_params],
+                        "candles_ago": entry_comp2_candles_ago
+                    }
+                },
+                "exit": {
+                    "comp1": {
+                        "type": exit_comp1_type.name if hasattr(exit_comp1_type, 'name') else str(exit_comp1_type),
+                        "name": exit_comp1_name,
+                        "params": list(exit_comp1_params) if isinstance(exit_comp1_params, tuple) else [exit_comp1_params],
+                        "candles_ago": exit_comp1_candles_ago
+                    },
+                    "strategy": exit_strategy,
+                    "comp2": {
+                        "type": exit_comp2_type.name if hasattr(exit_comp2_type, 'name') else str(exit_comp2_type),
+                        "name": exit_comp2_name,
+                        "params": list(exit_comp2_params) if isinstance(exit_comp2_params, tuple) else [exit_comp2_params],
+                        "candles_ago": exit_comp2_candles_ago
+                    }
+                }
+            }
+        
+        elif strategy_type == 'multi':
+            # Multi-condition strategy
+            entry_conditions = strategy_dict['entry_conditions']
+            exit_conditions = strategy_dict['exit_conditions']
+            entry_logic = strategy_dict['entry_logic']
+            exit_logic = strategy_dict['exit_logic']
+            
+            # Build entry conditions list
+            entry_conditions_json = []
+            for condition in entry_conditions:
+                comp1_type = condition['comp1_type']
+                comp1_name = condition['comp1_name']
+                comp1_params = condition['comp1_params']
+                comp1_candles = condition['comp1_candles_ago']
+                comp2_type = condition['comp2_type']
+                comp2_name = condition['comp2_name']
+                comp2_params = condition['comp2_params']
+                comp2_candles = condition['comp2_candles_ago']
+                strategy = condition['strategy']
+                
+                entry_conditions_json.append({
+                    "comp1": {
+                        "type": comp1_type.name if hasattr(comp1_type, 'name') else str(comp1_type),
+                        "name": comp1_name,
+                        "params": list(comp1_params) if isinstance(comp1_params, tuple) else [comp1_params],
+                        "candles_ago": comp1_candles
+                    },
+                    "strategy": strategy,
+                    "comp2": {
+                        "type": comp2_type.name if hasattr(comp2_type, 'name') else str(comp2_type),
+                        "name": comp2_name,
+                        "params": list(comp2_params) if isinstance(comp2_params, tuple) else [comp2_params],
+                        "candles_ago": comp2_candles
+                    }
+                })
+            
+            # Build exit conditions list
+            exit_conditions_json = []
+            for condition in exit_conditions:
+                comp1_type = condition['comp1_type']
+                comp1_name = condition['comp1_name']
+                comp1_params = condition['comp1_params']
+                comp1_candles = condition['comp1_candles_ago']
+                comp2_type = condition['comp2_type']
+                comp2_name = condition['comp2_name']
+                comp2_params = condition['comp2_params']
+                comp2_candles = condition['comp2_candles_ago']
+                strategy = condition['strategy']
+                
+                exit_conditions_json.append({
+                    "comp1": {
+                        "type": comp1_type.name if hasattr(comp1_type, 'name') else str(comp1_type),
+                        "name": comp1_name,
+                        "params": list(comp1_params) if isinstance(comp1_params, tuple) else [comp1_params],
+                        "candles_ago": comp1_candles
+                    },
+                    "strategy": strategy,
+                    "comp2": {
+                        "type": comp2_type.name if hasattr(comp2_type, 'name') else str(comp2_type),
+                        "name": comp2_name,
+                        "params": list(comp2_params) if isinstance(comp2_params, tuple) else [comp2_params],
+                        "candles_ago": comp2_candles
+                    }
+                })
+            
+            config["ticker_strategies"][ticker] = {
+                "type": "multi",
+                "entry_logic": entry_logic,
+                "exit_logic": exit_logic,
+                "entry_conditions": entry_conditions_json,
+                "exit_conditions": exit_conditions_json
+            }
+    
+    # Save to file
+    with open(filename, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    print(f"📁 Multi-ticker multi-strategy JSON saved: {len(tickers)} tickers with unique strategies")

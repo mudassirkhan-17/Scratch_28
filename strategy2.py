@@ -697,7 +697,7 @@ def generate_multi_condition_signals(data, entry_conditions, exit_conditions, en
     """Generate entry and exit signals using MultiConditionDetector"""
     print(f"\nSTEP 4: Generating multi-condition signals...")
     
-    from new12 import MultiConditionDetector
+    from multicondition import MultiConditionDetector
     
     # Create detector
     detector = MultiConditionDetector()
@@ -868,60 +868,114 @@ def execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital, 
 def execute_strategy():
     """Execute the complete strategy step by step"""
     
-    # Step 0: Choose Long or Short strategy using inputs.py function
-    from inputs import (get_strategy_direction, get_strategy_inputs, 
-                       get_multi_strategy_inputs, get_multi_ticker_inputs, 
-                       get_multi_ticker_multi_strategy_inputs)
+    # Step 0: Ask if user wants to load from JSON
+    print("\n" + "="*60)
+    print("STRATEGY EXECUTION MODE")
+    print("="*60)
+    use_json = input("📂 Load from saved JSON config? (y/n) [default: n]: ").lower().strip()
     
-
-    strategy_direction = get_strategy_direction()
+    if use_json == 'y':
+        # JSON MODE: Load configuration from file
+        from config_loader import load_json_config
+        
+        filename = input("Enter JSON filename [default: config.json]: ").strip()
+        if not filename:
+            filename = "config.json"
+        if not filename.endswith('.json'):
+            filename += '.json'
+        
+        try:
+            result = load_json_config(filename)
+            strategy_data = result['strategy_data']
+            strategy_direction_str = result['strategy_direction']
+            strategy_complexity = result['strategy_complexity']
+            sl_tp_config = result['sl_tp_config']
+            
+            # Map strategy direction
+            if strategy_direction_str == "long":
+                strategy_type = "long"
+                print("✅ Strategy Direction: LONG")
+            elif strategy_direction_str == "short":
+                strategy_type = "short"
+                print("✅ Strategy Direction: SHORT")
+                print("⚠️  LIQUIDATION PROTECTION: Enabled at 100% loss on position value")
+                print("💡 If price doubles from entry, position will be auto-liquidated")
+            else:
+                strategy_type = "reversal"
+                print("✅ Strategy Direction: REVERSAL")
+            
+            # Extract info for display
+            if strategy_complexity == "single":
+                ticker = result['ticker']
+                total_capital = result['total_capital']
+                per_trade_config = result['per_trade_config']
+                
+                print(f"✅ Config loaded: {ticker}")
+                print(f"💰 Total Capital: ${total_capital:,.2f}")
+                print(f"📊 Per Trade: ${per_trade_config['amount_per_trade']:,.2f} ({per_trade_config['percentage']:.1f}% allocation)")
+                print(f"✅ SL/TP configuration: {sl_tp_config}")
+            
+        except FileNotFoundError:
+            print(f"❌ File '{filename}' not found!")
+            return
+        except Exception as e:
+            print(f"❌ Error loading config: {e}")
+            return
     
-    if strategy_direction is None:
-        print("❌ Strategy direction selection cancelled")
-        return
-    
-    # Map the direction to our strategy type
-    if strategy_direction == "Long Only":
-        strategy_type = "long"
-        print("✅ Selected: Long Strategy")
-    elif strategy_direction == "Short Only":
-        strategy_type = "short"
-        print("✅ Selected: Short Strategy")
-        print("⚠️  LIQUIDATION PROTECTION: Enabled at 100% loss on position value")
-        print("💡 If price doubles from entry, position will be auto-liquidated")
-    else:  # Long/Short Reversal
-        strategy_type = "reversal"
-        print("✅ Selected: Long/Short Reversal Strategy")
-    
-    # Step 1: Choose strategy complexity and get inputs
-    print("\nSTEP 1: Getting strategy inputs...")
-    print("1. Single Strategy")
-    print("2. Multi Strategy") 
-    print("3. Multi Ticker")
-    print("4. Multi Ticker Multi Strategy")
-    
-    choice = input("Choose (1-4) [default: 1]: ").strip() or "1"
-    
-    if choice == "1":
-        strategy_data = get_strategy_inputs()
-        strategy_complexity = "single"
-    elif choice == "2":
-        from inputs import get_multi_condition_strategy_inputs
-        strategy_data = get_multi_condition_strategy_inputs()
-        strategy_complexity = "multi_condition"
-    elif choice == "3":
-        strategy_data = get_multi_ticker_inputs()
-        strategy_complexity = "multi_ticker"
-    elif choice == "4":
-        strategy_data = get_multi_ticker_multi_strategy_inputs()
-        strategy_complexity = "multi_ticker_multi"
     else:
-        print("❌ Invalid choice")
-        return
-    
-    if strategy_data is None:
-        print("❌ No strategy data collected")
-        return
+        # INTERACTIVE MODE: Original flow
+        from inputs import (get_strategy_direction, get_strategy_inputs, 
+                           get_multi_strategy_inputs, get_multi_ticker_inputs, 
+                           get_multi_ticker_multi_strategy_inputs)
+        
+        strategy_direction = get_strategy_direction()
+        
+        if strategy_direction is None:
+            print("❌ Strategy direction selection cancelled")
+            return
+        
+        # Map the direction to our strategy type
+        if strategy_direction == "Long Only":
+            strategy_type = "long"
+            print("✅ Selected: Long Strategy")
+        elif strategy_direction == "Short Only":
+            strategy_type = "short"
+            print("✅ Selected: Short Strategy")
+            print("⚠️  LIQUIDATION PROTECTION: Enabled at 100% loss on position value")
+            print("💡 If price doubles from entry, position will be auto-liquidated")
+        else:  # Long/Short Reversal
+            strategy_type = "reversal"
+            print("✅ Selected: Long/Short Reversal Strategy")
+        
+        # Step 1: Choose strategy complexity and get inputs
+        print("\nSTEP 1: Getting strategy inputs...")
+        print("1. Single Strategy")
+        print("2. Multi Strategy") 
+        print("3. Multi Ticker")
+        print("4. Multi Ticker Multi Strategy")
+        
+        choice = input("Choose (1-4) [default: 1]: ").strip() or "1"
+        
+        if choice == "1":
+            strategy_data = get_strategy_inputs()
+            strategy_complexity = "single"
+        elif choice == "2":
+            from inputs import get_multi_condition_strategy_inputs
+            strategy_data = get_multi_condition_strategy_inputs()
+            strategy_complexity = "multi_condition"
+        elif choice == "3":
+            strategy_data = get_multi_ticker_inputs()
+            strategy_complexity = "multi_ticker"
+        elif choice == "4":
+            strategy_data = get_multi_ticker_multi_strategy_inputs()
+            strategy_complexity = "multi_ticker_multi"
+        else:
+            print("❌ Invalid choice")
+            return
+        
+        if strategy_data is None:
+            print("❌ No strategy data collected")
+            return
     
     # Extract the basic info based on strategy complexity
     if strategy_complexity == "single":
@@ -932,14 +986,39 @@ def execute_strategy():
         total_capital = strategy_data[3]
         per_trade_config = strategy_data[4]
         
-        print(f"✅ Strategy inputs collected for {ticker}")
-        print(f"💰 Total Capital: ${total_capital:,.2f}")
-        print(f"📊 Per Trade: ${per_trade_config['amount_per_trade']:,.2f} ({per_trade_config['percentage']:.1f}% allocation)")
-        
-        # Step 1.5: Get SL/TP Configuration
-        from inputs import get_sl_tp_configuration
-        sl_tp_config = get_sl_tp_configuration()
-        print(f"✅ SL/TP configuration: {sl_tp_config}")
+        # Only print if we're in interactive mode (not JSON mode)
+        if use_json != 'y':
+            print(f"✅ Strategy inputs collected for {ticker}")
+            print(f"💰 Total Capital: ${total_capital:,.2f}")
+            print(f"📊 Per Trade: ${per_trade_config['amount_per_trade']:,.2f} ({per_trade_config['percentage']:.1f}% allocation)")
+            
+            # Step 1.5: Get SL/TP Configuration (only in interactive mode)
+            from inputs import get_sl_tp_configuration
+            sl_tp_config = get_sl_tp_configuration()
+            print(f"✅ SL/TP configuration: {sl_tp_config}")
+            
+            # Auto-save to config.json (only if it doesn't exist)
+            import os
+            from inputs import save_strategy_to_json
+            filename = "config.json"
+            
+            if not os.path.exists(filename):
+                try:
+                    # Map strategy_type back to direction string
+                    if strategy_type == "long":
+                        strategy_direction_str = "long"
+                    elif strategy_type == "short":
+                        strategy_direction_str = "short"
+                    else:
+                        strategy_direction_str = "reversal"
+                    
+                    save_strategy_to_json(strategy_data, filename, strategy_direction_str, sl_tp_config)
+                    print(f"\n💾 Configuration auto-saved to {filename}")
+                    print(f"💡 Next time, load JSON at startup to skip all questions!")
+                except Exception as e:
+                    print(f"❌ Error saving configuration: {e}")
+            else:
+                print(f"\n💡 Config file '{filename}' already exists, not overwriting.")
         
     elif strategy_complexity == "multi_condition":
         # Multi-condition format: (ticker, period, interval, total_capital, per_trade_config, sl_tp_config, condition_count, entry_logic, exit_logic, entry_conditions, exit_conditions)
@@ -961,6 +1040,31 @@ def execute_strategy():
         print(f"🔢 Conditions: {condition_count} entry ({entry_logic}), {condition_count} exit ({exit_logic})")
         print(f"✅ SL/TP configuration: {sl_tp_config}")
         
+        # Auto-save multi-condition config
+        if use_json != 'y':
+            import os
+            filename = "config_multi_condition.json"
+            
+            if not os.path.exists(filename):
+                try:
+                    # Map strategy_type to direction string
+                    if strategy_type == "long":
+                        strategy_direction_str = "long"
+                    elif strategy_type == "short":
+                        strategy_direction_str = "short"
+                    else:
+                        strategy_direction_str = "reversal"
+                    
+                    # Import and save multi-condition config
+                    from inputs import save_multi_condition_to_json
+                    save_multi_condition_to_json(strategy_data, filename, strategy_direction_str, sl_tp_config)
+                    print(f"\n💾 Multi-condition config auto-saved to {filename}")
+                    print(f"💡 Next time, load JSON at startup to skip all questions!")
+                except Exception as e:
+                    print(f"❌ Error saving configuration: {e}")
+            else:
+                print(f"\n💡 Config file '{filename}' already exists, not overwriting.")
+        
     elif strategy_complexity == "multi_ticker":
         # Multi-ticker format: dictionary with tickers, allocations, strategy_data, etc.
         tickers = strategy_data['tickers']
@@ -976,6 +1080,30 @@ def execute_strategy():
         print(f"💰 Total Capital: ${total_capital:,.2f}")
         print(f"📊 Allocations: {', '.join([f'{t}:{a*100:.1f}%' for t, a in allocations.items()])}")
         print(f"✅ SL/TP configuration: {sl_tp_config}")
+        
+        # Auto-save multi-ticker config
+        if use_json != 'y':
+            import os
+            filename = "config_multi_ticker.json"
+            
+            if not os.path.exists(filename):
+                try:
+                    # Map strategy_type to direction string
+                    if strategy_type == "long":
+                        strategy_direction_str = "long"
+                    elif strategy_type == "short":
+                        strategy_direction_str = "short"
+                    else:
+                        strategy_direction_str = "reversal"
+                    
+                    from inputs import save_multi_ticker_to_json
+                    save_multi_ticker_to_json(strategy_data, filename, strategy_direction_str)
+                    print(f"\n💾 Multi-ticker config auto-saved to {filename}")
+                    print(f"💡 Next time, load JSON at startup to skip all questions!")
+                except Exception as e:
+                    print(f"❌ Error saving configuration: {e}")
+            else:
+                print(f"\n💡 Config file '{filename}' already exists, not overwriting.")
         
     elif strategy_complexity == "multi_ticker_multi":
         # Multi-ticker multi-strategy format
@@ -993,6 +1121,30 @@ def execute_strategy():
         print(f"💰 Total Capital: ${total_capital:,.2f}")
         print(f"📊 Each ticker has unique strategy")
         print(f"✅ SL/TP configuration: {sl_tp_config}")
+        
+        # Auto-save multi-ticker multi-strategy config
+        if use_json != 'y':
+            import os
+            filename = "config_multi_ticker_multi.json"
+            
+            if not os.path.exists(filename):
+                try:
+                    # Map strategy_type to direction string
+                    if strategy_type == "long":
+                        strategy_direction_str = "long"
+                    elif strategy_type == "short":
+                        strategy_direction_str = "short"
+                    else:
+                        strategy_direction_str = "reversal"
+                    
+                    from inputs import save_multi_ticker_multi_to_json
+                    save_multi_ticker_multi_to_json(strategy_data, filename, strategy_direction_str)
+                    print(f"\n💾 Multi-ticker multi-strategy config auto-saved to {filename}")
+                    print(f"💡 Next time, load JSON at startup to skip all questions!")
+                except Exception as e:
+                    print(f"❌ Error saving configuration: {e}")
+            else:
+                print(f"\n💡 Config file '{filename}' already exists, not overwriting.")
         
     else:
         print("❌ Unsupported strategy complexity")
