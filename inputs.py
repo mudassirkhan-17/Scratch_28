@@ -2286,16 +2286,26 @@ def save_multi_ticker_to_json(strategy_data, filename="config_multi_ticker.json"
     period = strategy_data['period']
     interval = strategy_data['interval']
     sl_tp_config = strategy_data['sl_tp_config']
-    shared_strategy = strategy_data['strategy_data']
     
-    # Unpack shared strategy (23 elements)
-    (ticker_placeholder, period_s, interval_s, total_capital_s, per_trade_config,
-     entry_comp1_type, entry_comp1_name, entry_comp1_params,
-     entry_comp2_type, entry_comp2_name, entry_comp2_params,
-     exit_comp1_type, exit_comp1_name, exit_comp1_params,
-     exit_comp2_type, exit_comp2_name, exit_comp2_params,
-     entry_strategy, exit_strategy, entry_comp1_candles_ago, entry_comp2_candles_ago,
-     exit_comp1_candles_ago, exit_comp2_candles_ago) = shared_strategy
+    # Extract strategy components directly from the dict (new format)
+    entry_comp1_type = strategy_data['entry_comp1_type']
+    entry_comp1_name = strategy_data['entry_comp1_name']
+    entry_comp1_params = strategy_data['entry_comp1_params']
+    entry_comp1_candles_ago = strategy_data['entry_comp1_candles_ago']
+    entry_comp2_type = strategy_data['entry_comp2_type']
+    entry_comp2_name = strategy_data['entry_comp2_name']
+    entry_comp2_params = strategy_data['entry_comp2_params']
+    entry_comp2_candles_ago = strategy_data['entry_comp2_candles_ago']
+    exit_comp1_type = strategy_data['exit_comp1_type']
+    exit_comp1_name = strategy_data['exit_comp1_name']
+    exit_comp1_params = strategy_data['exit_comp1_params']
+    exit_comp1_candles_ago = strategy_data['exit_comp1_candles_ago']
+    exit_comp2_type = strategy_data['exit_comp2_type']
+    exit_comp2_name = strategy_data['exit_comp2_name']
+    exit_comp2_params = strategy_data['exit_comp2_params']
+    exit_comp2_candles_ago = strategy_data['exit_comp2_candles_ago']
+    entry_strategy = strategy_data['entry_strategy']
+    exit_strategy = strategy_data['exit_strategy']
     
     # Build JSON structure
     config = {

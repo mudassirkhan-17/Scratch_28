@@ -762,7 +762,7 @@ def execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_
     
     # Print final results with advanced metrics
     executor.print_final_results(data)
-    return data, executor.trades
+    return data, executor.trades, executor
 
 def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
     """Step 5: Execute Short Entry/Exit Strategy - Modular Version"""
@@ -786,7 +786,7 @@ def execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per
     
     # Print final results with advanced metrics
     executor.print_final_results(data)
-    return data, executor.trades
+    return data, executor.trades, executor
 
 def execute_multi_ticker_strategy(data, strategy_data, strategy_type):
     """Execute multi-ticker strategy with portfolio allocation management"""
@@ -838,7 +838,7 @@ def execute_multi_ticker_strategy(data, strategy_data, strategy_type):
     # Print final results
     portfolio_manager.print_final_results(data)
     
-    return data, portfolio_manager.all_trades
+    return data, portfolio_manager.all_trades, portfolio_manager
 
 def execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config):
     """Step 5: Execute Long/Short Reversal Strategy - Modular Version"""
@@ -1256,13 +1256,160 @@ def execute_strategy():
         strategy_data['allocations'] = new_allocations
         strategy_data['trade_sizes'] = new_trade_sizes
         strategy_data['ticker_mapping'] = ticker_mapping
-        data, trades = execute_multi_ticker_strategy(data, strategy_data, strategy_type)
+        data, trades, portfolio_manager = execute_multi_ticker_strategy(data, strategy_data, strategy_type)
+        executor = None  # Multi-ticker has different structure
+        
+        # Save multi-ticker results to JSON
+        from datetime import datetime
+        import json
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        results_filename = f"results_{strategy_complexity}_{'_'.join(actual_tickers[:3])}_{timestamp}.json"
+        
+        # Get final results from portfolio manager
+        final_prices = {}
+        for ticker in actual_tickers:
+            if f'{ticker}_Close' in data.columns:
+                final_prices[ticker] = data[f'{ticker}_Close'].iloc[-1]
+        
+        final_results = portfolio_manager.get_final_results(final_prices)
+        
+        # Calculate advanced metrics if available
+        advanced_metrics = {}
+        if len(trades) > 0:
+            try:
+                from metrics import calculate_advanced_metrics
+                
+                # Create a mock portfolio manager for metrics calculation
+                class MockPortfolio:
+                    def __init__(self, initial_cash, final_value):
+                        self.initial_cash = initial_cash
+                        self.final_cash = final_value
+                
+                mock_portfolio = MockPortfolio(total_capital, final_results['total_final_value'])
+                
+                # Ensure portfolio value column exists
+                if 'Portfolio_Value' not in data.columns and portfolio_manager.portfolio_history:
+                    portfolio_values = [h['total_value'] for h in portfolio_manager.portfolio_history]
+                    if len(portfolio_values) == len(data):
+                        data['Portfolio_Value'] = portfolio_values
+                    else:
+                        # Pad or truncate to match data length
+                        if len(portfolio_values) < len(data):
+                            last_value = portfolio_values[-1] if portfolio_values else total_capital
+                            portfolio_values.extend([last_value] * (len(data) - len(portfolio_values)))
+                        else:
+                            portfolio_values = portfolio_values[:len(data)]
+                        data['Portfolio_Value'] = portfolio_values
+                
+                metrics = calculate_advanced_metrics(mock_portfolio, data, trades)
+                if metrics:
+                    advanced_metrics = {
+                        'sharpe_ratio': metrics.get('sharpe_ratio', 0),
+                        'sortino_ratio': metrics.get('sortino_ratio', 0),
+                        'calmar_ratio': metrics.get('calmar_ratio', 0),
+                        'max_drawdown': metrics.get('max_drawdown', 0),
+                        'volatility': metrics.get('volatility', 0),
+                        'win_rate': metrics.get('win_rate', 0),
+                        'profit_factor': metrics.get('profit_factor', 0)
+                    }
+            except Exception as e:
+                print(f"⚠️ Advanced metrics calculation for JSON failed: {e}")
+        
+        # Build multi-ticker JSON output
+        output = {
+            "execution_timestamp": datetime.now().isoformat(),
+            "mode": strategy_complexity,
+            "configuration": {
+                "mode": strategy_complexity,
+                "tickers": actual_tickers,
+                "strategy_direction": strategy_type,
+                "period": period,
+                "interval": interval,
+                "total_capital": total_capital,
+                "allocations": strategy_data['allocations'],
+                "trade_sizes": strategy_data['trade_sizes'],
+                "risk_management": sl_tp_config
+            },
+            "results": {
+                "portfolio_total": {
+                    "started_with": final_results['total_initial_capital'],
+                    "ended_with": final_results['total_final_value'],
+                    "total_profit": final_results['total_profit_loss'],
+                    "total_return_percent": final_results['total_return_percent'],
+                    "total_trades": final_results['total_trades']
+                },
+                "per_ticker_results": {
+                    ticker: {
+                        "initial_capital": result['initial_capital'],
+                        "final_value": result['final_value'],
+                        "profit_loss": result['profit_loss'],
+                        "return_percent": result['return_percent'],
+                        "trades": result['trades']
+                    }
+                    for ticker, result in final_results['ticker_results'].items()
+                },
+                "advanced_metrics": advanced_metrics if advanced_metrics else None
+            },
+            "trades": trades if isinstance(trades, list) else []
+        }
+        
+        # Add strategy-specific configuration for multi_ticker_multi mode
+        if strategy_complexity == "multi_ticker_multi":
+            output["configuration"]["ticker_strategies"] = strategy_data.get('ticker_strategies', {})
+        
+        # Save to file
+        with open(results_filename, 'w') as f:
+            json.dump(output, f, indent=2)
+        
+        print(f"\n💾 Multi-ticker results saved to: {results_filename}")
+        
     elif strategy_type == "long":
-        data, trades = execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
+        data, trades, executor = execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
     elif strategy_type == "short":
-        data, trades = execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
+        data, trades, executor = execute_short_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
     else:  # reversal
         data, trades = execute_reversal_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
+        executor = None
+    
+    # Save results to JSON for single strategies (Mode 1 & 2)
+    if strategy_complexity in ["single", "multi_condition"] and executor is not None:
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        results_filename = f"results_{strategy_complexity}_{ticker}_{timestamp}.json"
+        
+        # Build configuration dict
+        config_dict = {
+            "mode": strategy_complexity,
+            "ticker": ticker,
+            "strategy_direction": strategy_type,
+            "period": period,
+            "interval": interval,
+            "total_capital": total_capital,
+            "per_trade_allocation": per_trade_config,
+            "risk_management": sl_tp_config
+        }
+        
+        # Add strategy-specific config
+        if strategy_complexity == "single":
+            # Extract strategy details from strategy_data tuple
+            config_dict["entry_strategy"] = {
+                "comp1": f"{strategy_data[6]}({strategy_data[7]})",
+                "comparison": strategy_data[17],
+                "comp2": f"{strategy_data[9]}({strategy_data[10]})",
+                "candles_ago": [strategy_data[19], strategy_data[20]]
+            }
+            config_dict["exit_strategy"] = {
+                "comp1": f"{strategy_data[12]}({strategy_data[13]})",
+                "comparison": strategy_data[18],
+                "comp2": f"{strategy_data[15]}({strategy_data[16]})",
+                "candles_ago": [strategy_data[21], strategy_data[22]]
+            }
+        elif strategy_complexity == "multi_condition":
+            config_dict["condition_count"] = condition_count
+            config_dict["entry_logic"] = entry_logic
+            config_dict["exit_logic"] = exit_logic
+        
+        executor.save_results_to_json(data, config_dict, results_filename)
     
     return strategy_data, data, trades
 

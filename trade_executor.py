@@ -397,3 +397,144 @@ class TradeExecutor:
                 print(f"\n⚠️ Advanced metrics not available (metrics.py not found)")
             except Exception as e:
                 print(f"\n⚠️ Error calculating advanced metrics: {e}")
+    
+    def save_results_to_json(self, data=None, config=None, filename="results.json"):
+        """
+        Save trading results to JSON file
+        
+        Args:
+            data: DataFrame with trading data
+            config: Dictionary with configuration details
+            filename: Output JSON filename
+        """
+        import json
+        from datetime import datetime
+        
+        # Get last price from data if available
+        current_price = None
+        if data is not None and len(data) > 0:
+            current_price = data['Close'].iloc[-1]
+        
+        # Get basic results
+        results = self.get_final_results(current_price)
+        
+        # Determine final position
+        if self.portfolio.is_long():
+            final_position = f"LONG {self.portfolio.shares_owned} shares"
+        elif self.portfolio.is_short():
+            final_position = f"SHORT {abs(self.portfolio.shares_owned)} shares"
+        else:
+            final_position = "FLAT"
+        
+        # Build JSON structure
+        output = {
+            "execution_timestamp": datetime.now().isoformat(),
+            "mode": config.get('mode', 'single') if config else 'single',
+            "configuration": config if config else {},
+            "results": {
+                "initial_cash": results['initial_cash'],
+                "final_value": results['final_value'],
+                "total_profit": results['total_profit'],
+                "total_return_percent": results['total_return_percent'],
+                "final_position": final_position
+            },
+            "performance_metrics": {},
+            "trading_period": {},
+            "trades": []
+        }
+        
+        # Add advanced metrics if available
+        if data is not None and len(self.trades) > 0:
+            try:
+                from metrics import calculate_advanced_metrics
+                metrics = calculate_advanced_metrics(self.portfolio, data, self.trades)
+                
+                if metrics:
+                    output["performance_metrics"] = {
+                        "total_trades": metrics.get('total_trades', 0),
+                        "win_rate_percent": metrics.get('win_rate', 0),
+                        "profit_factor": metrics.get('profit_factor', 0),
+                        "sharpe_ratio": metrics.get('sharpe_ratio', 0),
+                        "sortino_ratio": metrics.get('sortino_ratio', 0),
+                        "calmar_ratio": metrics.get('calmar_ratio', 0),
+                        "max_drawdown_percent": metrics.get('max_drawdown', 0),
+                        "volatility_percent": metrics.get('volatility', 0),
+                        "annual_return_percent": metrics.get('annual_return', 0),
+                        "cumulative_return_percent": metrics.get('cumulative_return', 0)
+                    }
+                    
+                    output["trading_period"] = {
+                        "years_traded": metrics.get('years_traded', 0),
+                        "trading_days": metrics.get('trading_days', 0)
+                    }
+                    
+                    # Add portfolio value range if available
+                    if 'Portfolio_Value' in data.columns:
+                        portfolio_values = data['Portfolio_Value'].dropna()
+                        output["trading_period"]["portfolio_value_range"] = {
+                            "min": float(portfolio_values.min()),
+                            "max": float(portfolio_values.max())
+                        }
+            except Exception as e:
+                # If metrics fail, just skip them
+                pass
+        
+        # Process trades - add dates from data if available
+        trade_number = 0
+        for i, trade in enumerate(self.trades):
+            trade_number += 1
+            trade_data = {
+                "trade_number": trade_number,
+                "type": trade.get('type', 'UNKNOWN'),
+                "shares": trade.get('shares', 0),
+                "price": trade.get('price', 0)
+            }
+            
+            # Add date if available (try to find from data index)
+            if data is not None and 'date' in trade:
+                trade_data['date'] = trade['date']
+            elif data is not None and len(data) > i:
+                # Try to extract date from data
+                try:
+                    trade_data['date'] = str(data.index[i])
+                except:
+                    trade_data['date'] = None
+            
+            # Add type-specific fields
+            if trade['type'] in ['BUY', 'LONG_ENTRY', 'LONG']:
+                trade_data['amount'] = trade.get('money_spent', 0)
+                if 'sl_price' in trade:
+                    trade_data['sl_price'] = trade['sl_price']
+                if 'tp_price' in trade:
+                    trade_data['tp_price'] = trade['tp_price']
+            
+            elif trade['type'] in ['SELL', 'LONG_EXIT']:
+                trade_data['amount'] = trade.get('money_received', 0)
+                trade_data['profit_loss'] = trade.get('profit_loss', 0)
+                trade_data['exit_reason'] = trade.get('exit_reason', 'SIGNAL')
+            
+            elif trade['type'] == 'STOP_LOSS':
+                trade_data['entry_price'] = trade.get('entry_price', 0)
+                trade_data['profit_loss'] = trade.get('profit_loss', 0)
+                trade_data['exit_reason'] = 'STOP_LOSS'
+            
+            elif trade['type'] == 'TAKE_PROFIT':
+                trade_data['entry_price'] = trade.get('entry_price', 0)
+                trade_data['profit_loss'] = trade.get('profit_loss', 0)
+                trade_data['exit_reason'] = 'TAKE_PROFIT'
+            
+            elif trade['type'] in ['SHORT', 'SHORT_ENTRY']:
+                trade_data['amount'] = trade.get('money_received', 0)
+            
+            elif trade['type'] == 'COVER':
+                trade_data['amount'] = trade.get('money_spent', 0)
+                trade_data['profit_loss'] = trade.get('profit_loss', 0)
+                trade_data['exit_reason'] = 'SIGNAL'
+            
+            output["trades"].append(trade_data)
+        
+        # Save to file
+        with open(filename, 'w') as f:
+            json.dump(output, f, indent=2)
+        
+        print(f"\n💾 Results saved to: {filename}")
