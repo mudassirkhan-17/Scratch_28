@@ -27082,7 +27082,7 @@ class ZeroLagExponentialMovingAverageStrategies:
 
     def compute_values(self, df):
         lag = int((self.period - 1) / 2)
-        adjusted = df['Close'] + (df['Close'] - df['Close'].shift(lag).fillna(method='bfill'))
+        adjusted = df['Close'] + (df['Close'] - df['Close'].shift(lag).bfill())
         zlema = adjusted.ewm(alpha=2/(self.period+1), adjust=False).mean()
         return pd.Series(zlema, index=df.index)
 

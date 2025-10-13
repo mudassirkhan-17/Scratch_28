@@ -788,7 +788,7 @@ def download_multi_ticker_data(tickers, period, interval):
             unified_data = unified_data.merge(ticker_df, on='Date', how='left')
         
         # Forward fill missing values (for different market hours)
-        unified_data = unified_data.fillna(method='ffill')
+        unified_data = unified_data.ffill()
         
         # Drop rows where any ticker has no data
         unified_data = unified_data.dropna()
