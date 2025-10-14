@@ -3,6 +3,20 @@ import os
 import json
 from datetime import datetime
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # If python-dotenv is not installed, try to load .env manually
+    env_file = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
+    if os.path.exists(env_file):
+        with open(env_file, 'r') as f:
+            for line in f:
+                if line.strip() and not line.startswith('#'):
+                    key, value = line.strip().split('=', 1)
+                    os.environ[key] = value
+
 # Add paths for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))  # Go to project root
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'helpers'))  # Add helpers directory
@@ -899,11 +913,12 @@ def execute_strategy():
         print("\n🤔 AI is analyzing your strategy...")
         
         try:
-            # Use environment variable for API key
+            # Get API key from environment variable
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
                 print("❌ OpenAI API key not found!")
-                print("💡 Set OPENAI_API_KEY environment variable or enter it manually")
+                print("💡 Set OPENAI_API_KEY in your .env file or environment variable")
+                print("💡 You can also enter it manually below:")
                 api_key = input("Enter your OpenAI API key: ").strip()
                 if not api_key:
                     print("❌ No API key provided. Skipping AI parsing.")

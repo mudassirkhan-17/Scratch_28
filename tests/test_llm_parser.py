@@ -4,16 +4,32 @@ Test script for LLM Strategy Parser
 This demonstrates how to use the parser programmatically
 """
 
-from llm_strategy_parser import StrategyParser
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # If python-dotenv is not installed, try to load .env manually
+    env_file = os.path.join(os.path.dirname(__file__), '..', '.env')
+    if os.path.exists(env_file):
+        with open(env_file, 'r') as f:
+            for line in f:
+                if line.strip() and not line.startswith('#'):
+                    key, value = line.strip().split('=', 1)
+                    os.environ[key] = value
+
+from llm.llm_strategy_parser import StrategyParser
 import json
-import os
 
-
-# Set your API key here or as environment variable
-import os
+# Get API key from environment
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    print("❌ Please set OPENAI_API_KEY environment variable")
+    print("❌ Please set OPENAI_API_KEY in your .env file")
+    print("💡 Create a .env file with: OPENAI_API_KEY=your_api_key_here")
     exit(1)
 
 

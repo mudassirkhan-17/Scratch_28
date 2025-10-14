@@ -107,6 +107,19 @@ def validate_stop_loss_take_profit(sl_value, tp_value, field_name="risk level"):
         print(f"❌ {field_name} must be valid numbers. Using defaults: SL=2%, TP=4%")
         return 2.0, 4.0
 
+def validate_indicator_period(period, indicator_name="indicator"):
+    """Validate indicator period parameter"""
+    try:
+        num = int(period)
+        if 1 <= num <= 1000:  # Reasonable range
+            return num
+        else:
+            print(f"❌ {indicator_name} period must be between 1-1000. Using default: 14")
+            return 14
+    except (ValueError, TypeError):
+        print(f"❌ {indicator_name} period must be a valid integer. Using default: 14")
+        return 14
+
 def validate_timeframe_combination(period, interval):
     """Validate that period and interval combination makes sense"""
     # Define reasonable combinations
