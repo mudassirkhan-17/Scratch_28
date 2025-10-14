@@ -1,0 +1,46 @@
+Checkpoints to do
+1) download ticker data,
+2) run indicators
+
+
+
+
+
+we have indicators, how to compare file, what inputs to take file. 
+now we will be taking first inputs, which will include all essential things
+1) strategy type
+2) ticker
+2) total capital
+3) per trade capital
+4) sl/tp enable use or not
+5) trailing sl/tp use or not.
+6) timeline
+7) interval
+
+"""First function to run, will take all inputs from user and store in a variable"""
+
+class Strategy
+"""User selects strategy type (1-4) → Strategy class calls the corresponding input function from inputs.py
+The input function then collects all detailed parameters (ticker, timeframe, indicators, conditions) through interactive prompts
+How it works:
+choice "1" → get_strategy_inputs() → asks for ticker, period, indicators, entry/exit conditions
+choice "2" → get_multi_strategy_inputs() → asks for multiple conditions with AND/OR logic
+choice "3" → get_multi_ticker_inputs() → asks for portfolio allocation across multiple tickers
+choice "4" → get_multi_ticker_multi_strategy_inputs() → asks for different strategies per ticker"""
+
+
+get_strategy_inputs()
+
+here we got all the inputs. i.e ticker name, comparision type, etc. now we want to execute it.
+
+how to execute that the question. first we need data then two column.
+
+Now we created execute_strategy function. it will execute strategy. first it takes the input from 
+strategy_data
+
+ticker = strategy_data[0]
+period = strategy_data[1] 
+interval = strategy_data[2]
+    
+download_data(ticker,period,interval)
+

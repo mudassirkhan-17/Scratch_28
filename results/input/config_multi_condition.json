@@ -1,0 +1,105 @@
+{
+  "mode": "multi_condition",
+  "strategy_direction": "long",
+  "basic": {
+    "ticker": "AAPL",
+    "period": "1y",
+    "interval": "1d",
+    "total_capital": 10000
+  },
+  "per_trade": {
+    "allocation_percent": 20.0,
+    "amount_per_trade": 2000.0
+  },
+  "sl_tp": {
+    "enabled": true,
+    "stop_loss_percent": 5.0,
+    "take_profit_percent": 10.0,
+    "trailing_sl_enabled": false,
+    "trailing_sl_type": null,
+    "trailing_sl_percent": 0.0
+  },
+  "condition_count": 2,
+  "entry_logic": "OR",
+  "exit_logic": "OR",
+  "entry_conditions": [
+    {
+      "comp1": {
+        "type": "INDICATOR",
+        "name": "SMA",
+        "params": [
+          20
+        ],
+        "candles_ago": 0
+      },
+      "strategy": "CROSSED UP",
+      "comp2": {
+        "type": "INDICATOR",
+        "name": "SMA",
+        "params": [
+          25
+        ],
+        "candles_ago": 0
+      }
+    },
+    {
+      "comp1": {
+        "type": "INDICATOR",
+        "name": "SMA",
+        "params": [
+          20
+        ],
+        "candles_ago": 0
+      },
+      "strategy": "CROSSED UP",
+      "comp2": {
+        "type": "INDICATOR",
+        "name": "SMA",
+        "params": [
+          25
+        ],
+        "candles_ago": 0
+      }
+    }
+  ],
+  "exit_conditions": [
+    {
+      "comp1": {
+        "type": "INDICATOR",
+        "name": "SMA",
+        "params": [
+          20
+        ],
+        "candles_ago": 0
+      },
+      "strategy": "CROSSED DOWN",
+      "comp2": {
+        "type": "INDICATOR",
+        "name": "SMA",
+        "params": [
+          25
+        ],
+        "candles_ago": 0
+      }
+    },
+    {
+      "comp1": {
+        "type": "INDICATOR",
+        "name": "SMA",
+        "params": [
+          20
+        ],
+        "candles_ago": 0
+      },
+      "strategy": "CROSSED DOWN",
+      "comp2": {
+        "type": "INDICATOR",
+        "name": "SMA",
+        "params": [
+          25
+        ],
+        "candles_ago": 0
+      }
+    }
+  ]
+}

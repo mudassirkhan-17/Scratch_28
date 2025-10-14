@@ -1,0 +1,162 @@
+{
+  "execution_timestamp": "2025-10-14T03:10:28.090968",
+  "mode": "multi_condition",
+  "configuration": {
+    "mode": "multi_condition",
+    "ticker": "AAPL",
+    "strategy_direction": "long",
+    "period": "1y",
+    "interval": "1d",
+    "total_capital": 10000,
+    "per_trade_allocation": {
+      "method": "percentage",
+      "percentage": 20.0,
+      "amount_per_trade": 2000.0,
+      "total_capital": 10000
+    },
+    "risk_management": {
+      "enabled": true,
+      "sl_type": "percentage",
+      "tp_type": "percentage",
+      "sl_value": 0.05,
+      "tp_value": 0.1,
+      "trailing_sl_enabled": false,
+      "trailing_sl_type": null,
+      "trailing_sl_value": 0
+    },
+    "condition_count": 2,
+    "entry_logic": "OR",
+    "exit_logic": "OR"
+  },
+  "results": {
+    "initial_cash": 10000,
+    "final_value": 10088.754257202148,
+    "total_profit": 88.75425720214844,
+    "total_return_percent": 0.8875425720214843,
+    "final_position": "FLAT"
+  },
+  "performance_metrics": {
+    "total_trades": 12,
+    "win_rate_percent": 25.0,
+    "profit_factor": 1.475770706388666,
+    "sharpe_ratio": -0.3337433074183757,
+    "sortino_ratio": -0.4296625539437576,
+    "calmar_ratio": 29.10461853252958,
+    "max_drawdown_percent": -3.073995215367492,
+    "volatility_percent": 3.1638500446928104,
+    "annual_return_percent": 0.8946745811409196,
+    "cumulative_return_percent": 0.8875425720214843
+  },
+  "trading_period": {
+    "years_traded": 0.9920634920634921,
+    "trading_days": 250,
+    "portfolio_value_range": {
+      "min": 9819.08560180664,
+      "max": 10130.49658203125
+    }
+  },
+  "trades": [
+    {
+      "trade_number": 1,
+      "type": "BUY",
+      "shares": 8,
+      "price": 241.79165649414062,
+      "date": "0",
+      "amount": 1934.333251953125
+    },
+    {
+      "trade_number": 2,
+      "type": "SELL",
+      "shares": 8,
+      "price": 237.028564453125,
+      "date": "1",
+      "amount": 1896.228515625,
+      "profit_loss": -38.104736328125,
+      "exit_reason": "SIGNAL"
+    },
+    {
+      "trade_number": 3,
+      "type": "BUY",
+      "shares": 8,
+      "price": 243.87306213378906,
+      "date": "2",
+      "amount": 1950.9844970703125
+    },
+    {
+      "trade_number": 4,
+      "type": "STOP_LOSS_LONG",
+      "shares": 8,
+      "price": 226.92454528808594,
+      "date": "3"
+    },
+    {
+      "trade_number": 5,
+      "type": "BUY",
+      "shares": 10,
+      "price": 195.7707977294922,
+      "date": "4",
+      "amount": 1957.7079772949219
+    },
+    {
+      "trade_number": 6,
+      "type": "SELL",
+      "shares": 10,
+      "price": 199.98304748535156,
+      "date": "5",
+      "amount": 1999.8304748535156,
+      "profit_loss": 42.12249755859375,
+      "exit_reason": "SIGNAL"
+    },
+    {
+      "trade_number": 7,
+      "type": "BUY",
+      "shares": 9,
+      "price": 200.40257263183594,
+      "date": "6",
+      "amount": 1803.6231536865234
+    },
+    {
+      "trade_number": 8,
+      "type": "SELL",
+      "shares": 9,
+      "price": 198.97418212890625,
+      "date": "7",
+      "amount": 1790.7676391601562,
+      "profit_loss": -12.855514526367188,
+      "exit_reason": "SIGNAL"
+    },
+    {
+      "trade_number": 9,
+      "type": "BUY",
+      "shares": 9,
+      "price": 200.7721405029297,
+      "date": "8",
+      "amount": 1806.9492645263672
+    },
+    {
+      "trade_number": 10,
+      "type": "SELL",
+      "shares": 9,
+      "price": 202.68995666503906,
+      "date": "9",
+      "amount": 1824.2096099853516,
+      "profit_loss": 17.260345458984375,
+      "exit_reason": "SIGNAL"
+    },
+    {
+      "trade_number": 11,
+      "type": "BUY",
+      "shares": 8,
+      "price": 229.0900115966797,
+      "date": "10",
+      "amount": 1832.7200927734375
+    },
+    {
+      "trade_number": 12,
+      "type": "TAKE_PROFIT_LONG",
+      "shares": 8,
+      "price": 256.0799865722656,
+      "date": "11"
+    }
+  ]
+}

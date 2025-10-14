@@ -1,0 +1,182 @@
+{
+  "execution_timestamp": "2025-10-14T15:58:43.466508",
+  "mode": "single",
+  "configuration": {
+    "mode": "single",
+    "ticker": "AAPL",
+    "strategy_direction": "long",
+    "period": "1y",
+    "interval": "1d",
+    "total_capital": 10000,
+    "per_trade_allocation": {
+      "method": "percentage",
+      "percentage": 20.0,
+      "amount_per_trade": 2000.0,
+      "total_capital": 10000
+    },
+    "risk_management": {
+      "enabled": true,
+      "sl_type": "percentage",
+      "tp_type": "percentage",
+      "sl_value": 0.05,
+      "tp_value": 0.1,
+      "trailing_sl_enabled": false,
+      "trailing_sl_type": null,
+      "trailing_sl_value": 0
+    },
+    "entry_strategy": {
+      "comp1": "SMA((20,))",
+      "comparison": "CROSSED UP",
+      "comp2": "PRICE(('Close',))",
+      "candles_ago": [
+        0,
+        0
+      ]
+    },
+    "exit_strategy": {
+      "comp1": "SMA((20,))",
+      "comparison": "CROSSED DOWN",
+      "comp2": "SMA((25,))",
+      "candles_ago": [
+        0,
+        0
+      ]
+    }
+  },
+  "results": {
+    "initial_cash": 10000,
+    "final_value": 9869.243087768555,
+    "total_profit": -130.7569122314453,
+    "total_return_percent": -1.3075691223144532,
+    "final_position": "LONG 8 shares"
+  },
+  "performance_metrics": {
+    "total_trades": 13,
+    "win_rate_percent": 15.384615384615385,
+    "profit_factor": 0.6252925085648201,
+    "sharpe_ratio": -1.0312459421459035,
+    "sortino_ratio": -1.2880619416914034,
+    "calmar_ratio": -0.2687008862578542,
+    "max_drawdown_percent": -4.904935212662277,
+    "volatility_percent": 3.182129043322498,
+    "annual_return_percent": -1.3179604386797106,
+    "cumulative_return_percent": -1.3075691223144532
+  },
+  "trading_period": {
+    "years_traded": 0.9920634920634921,
+    "trading_days": 250,
+    "portfolio_value_range": {
+      "min": 9610.948837280273,
+      "max": 10106.674682617188
+    }
+  },
+  "trades": [
+    {
+      "trade_number": 1,
+      "type": "BUY",
+      "shares": 8,
+      "price": 242.9874267578125,
+      "date": "0",
+      "amount": 1943.8994140625
+    },
+    {
+      "trade_number": 2,
+      "type": "SELL",
+      "shares": 8,
+      "price": 237.028564453125,
+      "date": "1",
+      "amount": 1896.228515625,
+      "profit_loss": -47.6708984375,
+      "exit_reason": "SIGNAL"
+    },
+    {
+      "trade_number": 3,
+      "type": "BUY",
+      "shares": 8,
+      "price": 227.2034454345703,
+      "date": "2",
+      "amount": 1817.6275634765625
+    },
+    {
+      "trade_number": 4,
+      "type": "STOP_LOSS_LONG",
+      "shares": 8,
+      "price": 209.16799926757812,
+      "date": "3"
+    },
+    {
+      "trade_number": 5,
+      "type": "BUY",
+      "shares": 9,
+      "price": 202.69384765625,
+      "date": "4",
+      "amount": 1824.24462890625
+    },
+    {
+      "trade_number": 6,
+      "type": "STOP_LOSS_LONG",
+      "shares": 9,
+      "price": 187.92002868652344,
+      "date": "5"
+    },
+    {
+      "trade_number": 7,
+      "type": "BUY",
+      "shares": 10,
+      "price": 198.40435791015625,
+      "date": "6",
+      "amount": 1984.0435791015625
+    },
+    {
+      "trade_number": 8,
+      "type": "SELL",
+      "shares": 10,
+      "price": 199.98304748535156,
+      "date": "7",
+      "amount": 1999.8304748535156,
+      "profit_loss": 15.786895751953125,
+      "exit_reason": "SIGNAL"
+    },
+    {
+      "trade_number": 9,
+      "type": "BUY",
+      "shares": 9,
+      "price": 211.03050231933594,
+      "date": "8",
+      "amount": 1899.2745208740234
+    },
+    {
+      "trade_number": 10,
+      "type": "SELL",
+      "shares": 9,
+      "price": 202.68995666503906,
+      "date": "9",
+      "amount": 1824.2096099853516,
+      "profit_loss": -75.06491088867188,
+      "exit_reason": "SIGNAL"
+    },
+    {
+      "trade_number": 11,
+      "type": "BUY",
+      "shares": 8,
+      "price": 226.7899932861328,
+      "date": "10",
+      "amount": 1814.3199462890625
+    },
+    {
+      "trade_number": 12,
+      "type": "TAKE_PROFIT_LONG",
+      "shares": 8,
+      "price": 256.0799865722656,
+      "date": "11"
+    },
+    {
+      "trade_number": 13,
+      "type": "BUY",
+      "shares": 8,
+      "price": 245.27000427246094,
+      "date": "12",
+      "amount": 1962.1600341796875
+    }
+  ]
+}

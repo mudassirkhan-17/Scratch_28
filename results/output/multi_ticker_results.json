@@ -1,0 +1,54 @@
+{
+  "execution_timestamp": "2025-10-14T03:11:00.572867",
+  "mode": "multi_ticker",
+  "configuration": {
+    "mode": "multi_ticker",
+    "tickers": [
+      "AAPL_1"
+    ],
+    "strategy_direction": "long",
+    "period": "1y",
+    "interval": "1d",
+    "total_capital": 10000,
+    "allocations": {
+      "AAPL_1": 1.0
+    },
+    "trade_sizes": {
+      "AAPL_1": {
+        "percentage": 0.2,
+        "amount_per_trade": 2000.0,
+        "max_trades": 5
+      }
+    },
+    "risk_management": {
+      "enabled": true,
+      "sl_type": "percentage",
+      "tp_type": "percentage",
+      "sl_value": 0.05,
+      "tp_value": 0.1,
+      "trailing_sl_enabled": false,
+      "trailing_sl_type": null,
+      "trailing_sl_value": 0
+    }
+  },
+  "results": {
+    "portfolio_total": {
+      "started_with": 10000,
+      "ended_with": 10000.0,
+      "total_profit": 0.0,
+      "total_return_percent": 0.0,
+      "total_trades": 0
+    },
+    "per_ticker_results": {
+      "AAPL_1": {
+        "initial_capital": 10000.0,
+        "final_value": 10000.0,
+        "profit_loss": 0.0,
+        "return_percent": 0.0,
+        "trades": 0
+      }
+    },
+    "advanced_metrics": null
+  },
+  "trades": []
+}

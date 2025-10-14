@@ -1,0 +1,79 @@
+{
+  "mode": "multi_ticker_multi",
+  "strategy_direction": "long",
+  "basic": {
+    "tickers": [
+      "AAPL"
+    ],
+    "period": "1y",
+    "interval": "1d",
+    "total_capital": 10000
+  },
+  "allocations": {
+    "AAPL": 1.0
+  },
+  "trade_sizes": {
+    "AAPL": {
+      "percentage": 0.2,
+      "amount_per_trade": 2000.0,
+      "max_trades": 5
+    }
+  },
+  "sl_tp": {
+    "enabled": true,
+    "stop_loss_percent": 5.0,
+    "take_profit_percent": 10.0,
+    "trailing_sl_enabled": false,
+    "trailing_sl_type": null,
+    "trailing_sl_percent": 0.0
+  },
+  "ticker_strategies": {
+    "AAPL": {
+      "type": "multi",
+      "entry_logic": "OR",
+      "exit_logic": "OR",
+      "entry_conditions": [
+        {
+          "comp1": {
+            "type": "INDICATOR",
+            "name": "SMA",
+            "params": [
+              20
+            ],
+            "candles_ago": 0
+          },
+          "strategy": "CROSSED UP",
+          "comp2": {
+            "type": "INDICATOR",
+            "name": "SMA",
+            "params": [
+              20
+            ],
+            "candles_ago": 0
+          }
+        }
+      ],
+      "exit_conditions": [
+        {
+          "comp1": {
+            "type": "INDICATOR",
+            "name": "SMA",
+            "params": [
+              20
+            ],
+            "candles_ago": 0
+          },
+          "strategy": "CROSSED UP",
+          "comp2": {
+            "type": "INDICATOR",
+            "name": "SMA",
+            "params": [
+              20
+            ],
+            "candles_ago": 0
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "mode": "single",
+  "strategy_direction": "long",
+  "basic": {
+    "ticker": "AAPL",
+    "period": "1y",
+    "interval": "1d",
+    "total_capital": 10000
+  },
+  "per_trade": {
+    "allocation_percent": 20.0,
+    "amount_per_trade": 2000.0
+  },
+  "entry": {
+    "comp1": {
+      "type": "PRICE",
+      "name": "Close",
+      "params": [
+        "Close"
+      ],
+      "candles_ago": 0
+    },
+    "strategy": "GREATER THAN",
+    "comp2": {
+      "type": "CONSTANT",
+      "name": "100",
+      "params": [
+        100
+      ],
+      "candles_ago": 0
+    }
+  },
+  "exit": {
+    "comp1": {
+      "type": "PRICE",
+      "name": "Close",
+      "params": [
+        "Close"
+      ],
+      "candles_ago": 0
+    },
+    "strategy": "LESS THAN",
+    "comp2": {
+      "type": "CONSTANT",
+      "name": "90",
+      "params": [
+        90
+      ],
+      "candles_ago": 0
+    }
+  },
+  "sl_tp": {
+    "enabled": false,
+    "stop_loss_percent": 0.0,
+    "take_profit_percent": 0.0,
+    "trailing_sl_enabled": false,
+    "trailing_sl_type": null,
+    "trailing_sl_percent": 0.0
+  }
+}

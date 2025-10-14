@@ -1,0 +1,204 @@
+first indicators file, input files, comparision,
+then we create strategy.py --> which will contain usage of functions etc
+strategy.py --> get_inputs() --> download_data() --> after we got data we make dataframe containing
+indicators --> calculate_indicators() --> now we got indciator we have to see how much to shift column
+i.e candle comparision --> generate_signals() --> they generate signals and give dataframe with entry/exit
+--> entry long()  -> entry short () --> formula mentioned below. --> get_strategy_direction() --> to
+ask wether to long or short --> execute_reversal_strategy() --> now we got everything so far. -->
+we added three files. --> portfoliomanager, risk manager, trade executor. refer pt1 for reference
+--> get_total_capital() --> 
+
+CORRECTED FLOW: SINGLE STRATEGY
+execute_strategy() --> get_strategy_direction() --> get_inputs() --> get_total_capital() --> 
+get_per_trade_allocation() --> download_data() --> calculate_indicators() --> 
+generate_signals() --> execute_long_strategy() OR execute_short_strategy() OR execute_reversal_strategy()
+--> calculate_advanced_metrics()
+
+MULTIPLE STRATEGY
+
+STEP 2A: SINGLE STRATEGY FLOW
+[strategy3.py] execute_strategy() --> [inputs.py] get_strategy_direction() --> [inputs.py] get_strategy_inputs() --> 
+[inputs.py] download_data() --> [strategy3.py] calculate_indicators() --> [strategy3.py] generate_signals() --> 
+[strategy3.py] execute_[strategy_type]() --> [trade_executor.py] calculate_advanced_metrics()
+
+STEP 2B: MULTI-CONDITION STRATEGY FLOW  
+[strategy3.py] execute_strategy() --> [inputs.py] get_strategy_direction() --> [inputs.py] get_multi_condition_strategy_inputs() --> 
+[inputs.py] download_data() --> [strategy3.py] calculate_multi_condition_indicators() --> [strategy3.py] generate_multi_condition_signals() --> 
+[strategy3.py] execute_[strategy_type]() --> [trade_executor.py] calculate_advanced_metrics()
+
+STEP 2C: MULTI-TICKER STRATEGY FLOW (SAME STRATEGY FOR ALL TICKERS)
+[strategy3.py] execute_strategy() --> [inputs.py] get_strategy_direction() --> [inputs.py] get_multi_ticker_inputs() --> 
+[inputs.py] download_multi_ticker_data() --> [strategy3.py] calculate_multi_ticker_indicators() --> 
+[strategy3.py] generate_multi_ticker_signals() --> [strategy3.py] execute_multi_ticker_strategy() --> 
+[portfolio_manager.py] calculate_portfolio_metrics()
+
+STEP 2D: MULTI-TICKER MULTI-STRATEGY FLOW (DIFFERENT STRATEGY PER TICKER)
+[strategy3.py] execute_strategy() --> [inputs.py] get_strategy_direction() --> [inputs.py] get_multi_ticker_multi_strategy_inputs() --> 
+[inputs.py] download_multi_ticker_data() --> [strategy3.py] calculate_multi_ticker_multi_strategy_indicators() --> 
+[strategy3.py] generate_multi_ticker_multi_strategy_signals() --> [strategy3.py] execute_multi_ticker_strategy() --> 
+[portfolio_manager.py] calculate_portfolio_metrics()
+
+STEP 3: JSON CONFIGURATION SYSTEM
+[strategy3.py] execute_strategy() --> [INPUT_MODE_CHOICE] --> 
+3A. Interactive Mode: [inputs.py] get_strategy_inputs() --> [inputs.py] save_strategy_to_json() --> [config_loader.py] load_json_config() --> [CONTINUE TO STEP 2A/2B/2C/2D]
+3B. JSON Load Mode: [config_loader.py] load_json_config() --> [CONTINUE TO STEP 2A/2B/2C/2D]
+3C. Natural Language Mode: [llm_strategy_parser.py] StrategyParser.parse_strategy() --> [llm_strategy_parser.py] save_config() --> [config_loader.py] load_json_config() --> [CONTINUE TO STEP 2A/2B/2C/2D]
+
+STEP 4: LLM INTEGRATION (NATURAL LANGUAGE TO JSON)
+[strategy3.py] execute_strategy() --> [CHOOSE: Natural Language] --> 
+[llm_strategy_parser.py] StrategyParser.__init__() --> [llm_strategy_parser.py] StrategyParser.parse_strategy() --> 
+[llm_strategy_parser.py] _call_openai() --> [llm_strategy_parser.py] _extract_json() --> [llm_strategy_parser.py] _validate_config() --> 
+[llm_strategy_parser.py] save_config() --> [config_loader.py] load_json_config() --> [CONTINUE TO STEP 2A/2B/2C/2D]
+
+STEP 5: JSON OUTPUT SYSTEM
+[AFTER ANY STRATEGY EXECUTION] --> 
+5A. Single Strategy: [trade_executor.py] executor.save_results_to_json() --> results_[ticker]_[timestamp].json
+5B. Multi-Condition: [trade_executor.py] executor.save_results_to_json() --> results_multi_condition_[timestamp].json  
+5C. Multi-Ticker: [portfolio_manager.py] portfolio_manager.get_final_results() --> results_multi_ticker_[timestamp].json
+5D. Multi-Ticker Multi-Strategy: [portfolio_manager.py] portfolio_manager.get_final_results() --> results_multi_ticker_multi_[timestamp].json
+
+
+
+
+DETAILED BREAKDOWN:
+1. execute_strategy() - Main orchestrator function
+2. [COMPLEXITY CHOICE] - User selects: Single (1) or Multi-condition (2) strategy
+3. get_strategy_direction() - Ask user: Long/Short/Reversal strategy
+
+SINGLE STRATEGY PATH:
+4a. get_strategy_inputs() - Collect single strategy parameters (ticker, indicators, comparisons, SL/TP)
+5a. download_data() - Download market data from yfinance  
+6a. calculate_indicators() - Compute technical indicators (SMA, EMA, RSI, etc.)
+7a. generate_signals() - Create buy/sell signals with candle comparison logic
+
+MULTI-CONDITION STRATEGY PATH:
+4b. get_multi_condition_strategy_inputs() - Collect multi-condition parameters (conditions, logic, SL/TP)
+5b. download_data() - Download market data from yfinance
+6b. calculate_multi_condition_indicators() - Compute indicators for all conditions
+7b. generate_multi_condition_signals() - Create signals using AND/OR logic
+
+MULTI-TICKER STRATEGY PATH (SAME STRATEGY):
+4c. get_multi_ticker_inputs() - Collect tickers, allocations, ONE strategy for all
+5c. download_multi_ticker_data() - Download data for all tickers simultaneously
+6c. calculate_multi_ticker_indicators() - Compute SAME indicators for each ticker
+7c. generate_multi_ticker_signals() - Create signals using SAME strategy for each ticker
+8c. execute_multi_ticker_strategy() - Execute trades with portfolio allocation management
+9c. calculate_portfolio_metrics() - Calculate portfolio-level and per-ticker metrics
+
+MULTI-TICKER MULTI-STRATEGY PATH (DIFFERENT STRATEGY PER TICKER):
+4d. get_multi_ticker_multi_strategy_inputs() - Collect tickers, allocations, UNIQUE strategy per ticker
+5d. download_multi_ticker_data() - Download data for all tickers simultaneously (REUSE EXISTING)
+6d. calculate_multi_ticker_multi_strategy_indicators() - Compute DIFFERENT indicators per ticker
+7d. generate_multi_ticker_multi_strategy_signals() - Create signals using DIFFERENT strategy per ticker
+8d. execute_multi_ticker_strategy() - Execute trades with portfolio allocation (REUSE EXISTING)
+9d. calculate_portfolio_metrics() - Calculate portfolio-level and per-ticker metrics (REUSE EXISTING)
+
+COMMON FINAL STEPS (Single & Multi-Condition):
+8. execute_[strategy_type]() - Execute trades based on user's chosen strategy type (Long/Short/Reversal)
+9. calculate_advanced_metrics() - Calculate performance metrics (Sharpe, Sortino, Calmar ratios)
+
+
+
+
+
+
+
+initial cash = 100
+invested_amount = initial cash * 0.8
+buying price = no of shares * price
+remaining = invested_amount - buying price  
+final cash = 0
+sellingprice = no of shares * price
+
+so i asked gpt to wrote sl/tp formula and what it meniton was if tp/sl hit then close the trade instead 
+of signals which is wrong
+
+pt1.
+
+portfoliomanager:
+enter_long_position(self, current_price) --> calculate variables only [shares,moneyspent,remaining]
+exit_long_position(self, current_price) --> same --> 'shares','selling_price', profit_loss,'final_cash'--> reset variables as well
+
+enter_short_position(self, current_price):
+exit_short_position(self, current_price): --> shares are in positive btw
+
+get_portfolio_value(self, current_price): --> end portfolio value after selling, we corrected the short logic
+
+get_position_value(self, current_price): --> get current value
+
+reset_for_next_trade(self, new_cash): --> make everything nulll
+
+is_long,short,flat()
+
+get_position_info() --> curent portoflio etc. 
+
+calculate_total_return(self):--> initial cash, final value, total profit, total return percent
+
+RiskManager:
+
+init --> entry price, stop loss price, take profit price, position direction, 
+position buying price, position shares
+
+set_sl_tp_levels(self, entry_price, shares_owned, buying_price, position_type): --> set percent/dollar wise
+
+check_stop_loss(self, current_price): --> check stop loss etc
+
+check_take_profit(self, current_price):
+
+def check_liquidation(self, current_price, portfolio):  -> if threshold cross stop position
+
+get_liquidation_info(self, current_price, portfolio):
+
+get_sl_tp_info(self): --> etc
+
+reset_levels(self):--> it reset the reset_levels
+is_sl_tp_enabled(),has_position(self),format_sl_tp_display(self),
+
+get_risk_check_result(self, current_price, portfolio): --> check_liquidation(current_price, portfolio):
+--> check_stop_loss(current_price)-->check_take_profit(current_price) --> get check result is the main function
+action, position_type, entry_price, trigger_price,info --> which action to take -->sl/tp/liq
+
+
+Trade executor
+
+__init__(self, initial_cash, sl_tp_config): --> portfolio, risk, trades
+
+process_market_tick(self, current_price, entry_signal, exit_signal, strategy_type): -->check which conditions
+is met if liquidation then it will trigger function --> if sl/tp trigger there function
+
+if no risk action taken
+
+then check strategy type wether long short or execute_reversal_strategy
+
+_execute_liquidation(self, current_price, liquidation_info): --> exit_short_position() calls --> reset_levels()
+
+_execute_stop_loss(self, current_price, risk_result): --> risk_result --> long/short --> exit_short_position/long
+
+_execute_take_profit(self, current_price, risk_result):
+
+_process_long_signals(self, current_price, entry_signal, exit_signal):
+
+enter long position exit long position, based on signal or tp or sl
+
+_process_reversal_signals(self, current_price, entry_signal, exit_signal):
+
+get_portfolio_tracking_data(self, current_price):
+
+print_final_results(self):
+    - Display basic results (profit, return, trades)
+    - Calculate and display advanced performance metrics:
+      * Sharpe Ratio: Risk-adjusted return (excess return / volatility)
+      * Sortino Ratio: Like Sharpe but only penalizes downside volatility
+      * Calmar Ratio: Annual return / Maximum drawdown
+      * Max Drawdown: Worst peak-to-trough loss
+      * Volatility: Standard deviation of returns
+      * Win Rate: Percentage of profitable trades
+      * Profit Factor: Gross profit / Gross loss
+
+ADVANCED METRICS EXPLAINED:
+- Sharpe Ratio: Higher is better (>1.0 is good, >2.0 is excellent)
+- Sortino Ratio: Usually higher than Sharpe (focuses on "bad" volatility)
+- Calmar Ratio: Higher is better (>1.0 means good reward-to-risk)
+- Max Drawdown: Lower is better (shows worst-case scenario)
+- Profit Factor: >1.0 is profitable, >2.0 is excellent
+

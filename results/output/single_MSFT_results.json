@@ -1,0 +1,56 @@
+{
+  "execution_timestamp": "2025-10-14T03:09:15.221825",
+  "mode": "single",
+  "configuration": {
+    "mode": "single",
+    "ticker": "MSFT",
+    "strategy_direction": "long",
+    "period": "1y",
+    "interval": "1d",
+    "total_capital": 10000,
+    "per_trade_allocation": {
+      "method": "percentage",
+      "percentage": 20.0,
+      "amount_per_trade": 2000.0,
+      "total_capital": 10000
+    },
+    "risk_management": {
+      "enabled": true,
+      "sl_type": "percentage",
+      "tp_type": "percentage",
+      "sl_value": 0.05,
+      "tp_value": 0.1,
+      "trailing_sl_enabled": false,
+      "trailing_sl_type": null,
+      "trailing_sl_value": 0
+    },
+    "entry_strategy": {
+      "comp1": "SMA((20,))",
+      "comparison": "CROSSED UP",
+      "comp2": "SMA((20,))",
+      "candles_ago": [
+        0,
+        0
+      ]
+    },
+    "exit_strategy": {
+      "comp1": "SMA((20,))",
+      "comparison": "CROSSED UP",
+      "comp2": "SMA((20,))",
+      "candles_ago": [
+        0,
+        0
+      ]
+    }
+  },
+  "results": {
+    "initial_cash": 10000,
+    "final_value": 10000,
+    "total_profit": 0,
+    "total_return_percent": 0.0,
+    "final_position": "FLAT"
+  },
+  "performance_metrics": {},
+  "trading_period": {},
+  "trades": []
+}

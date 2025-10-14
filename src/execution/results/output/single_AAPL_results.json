@@ -1,0 +1,81 @@
+{
+  "execution_timestamp": "2025-10-15T02:44:03.834481",
+  "mode": "single",
+  "configuration": {
+    "mode": "single",
+    "ticker": "AAPL",
+    "strategy_direction": "long",
+    "period": "1y",
+    "interval": "1d",
+    "total_capital": 10000,
+    "per_trade_allocation": {
+      "percentage": 20.0,
+      "amount_per_trade": 2000.0
+    },
+    "risk_management": {
+      "enabled": false,
+      "sl_type": "percentage",
+      "tp_type": "percentage",
+      "sl_value": 0.0,
+      "tp_value": 0.0,
+      "trailing_sl_enabled": false,
+      "trailing_sl_type": null,
+      "trailing_sl_value": 0.0
+    },
+    "entry_strategy": {
+      "comp1": "Close(('Close',))",
+      "comparison": "GREATER THAN",
+      "comp2": "100((100,))",
+      "candles_ago": [
+        0,
+        0
+      ]
+    },
+    "exit_strategy": {
+      "comp1": "Close(('Close',))",
+      "comparison": "LESS THAN",
+      "comp2": "90((90,))",
+      "candles_ago": [
+        0,
+        0
+      ]
+    }
+  },
+  "results": {
+    "initial_cash": 10000.0,
+    "final_value": 10120.0263671875,
+    "total_profit": 120.0263671875,
+    "total_return_percent": 1.200263671875,
+    "final_position": "LONG 8 shares"
+  },
+  "performance_metrics": {
+    "total_trades": 1,
+    "win_rate_percent": 0.0,
+    "profit_factor": 0,
+    "sharpe_ratio": -0.11599533970606392,
+    "sortino_ratio": -0.1128389441459217,
+    "calmar_ratio": 0.17920734687017506,
+    "max_drawdown_percent": -6.751529217579128,
+    "volatility_percent": 5.52337159650168,
+    "annual_return_percent": 1.2099236383988243,
+    "cumulative_return_percent": 1.200263671875
+  },
+  "trading_period": {
+    "years_traded": 0.9920634920634921,
+    "trading_days": 250,
+    "portfolio_value_range": {
+      "min": 9513.858154296875,
+      "max": 10202.696166992188
+    }
+  },
+  "trades": [
+    {
+      "trade_number": 1,
+      "type": "BUY",
+      "shares": 8,
+      "price": 232.76670837402344,
+      "date": "0",
+      "amount": 1862.1336669921875
+    }
+  ]
+}
