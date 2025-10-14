@@ -939,11 +939,13 @@ def execute_strategy():
             
             # Save config to organized folder
 
-            # Create input folder if it doesn't exist
-            os.makedirs("results/input", exist_ok=True)
+            # Create input folder if it doesn't exist (relative to project root)
+            project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+            results_input_dir = os.path.join(project_root, "results", "input")
+            os.makedirs(results_input_dir, exist_ok=True)
             
             # Use a standard filename instead of timestamp
-            ai_config_filename = "results/input/ai_config.json"
+            ai_config_filename = os.path.join(results_input_dir, "ai_config.json")
             parser.save_config(config, ai_config_filename)
             print(f"💾 Config saved as: {ai_config_filename}")
             
@@ -971,7 +973,12 @@ def execute_strategy():
         if input_mode != "1":
             filename = input("Enter JSON filename [default: results/input/config.json]: ").strip()
             if not filename:
-                filename = "results/input/config.json"
+                project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+                filename = os.path.join(project_root, "results", "input", "config.json")
+            elif not filename.startswith(os.sep) and not filename.startswith('results/'):
+                # If it's a relative path, make it relative to project root
+                project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+                filename = os.path.join(project_root, filename)
             if not filename.endswith('.json'):
                 filename += '.json'
         
@@ -1086,9 +1093,11 @@ def execute_strategy():
             
             # Auto-save to configs folder (only if it doesn't exist
 
-            # Create input folder if it doesn't exist
-            os.makedirs("results/input", exist_ok=True)
-            filename = "results/input/config.json"
+            # Create input folder if it doesn't exist (relative to project root)
+            project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+            results_input_dir = os.path.join(project_root, "results", "input")
+            os.makedirs(results_input_dir, exist_ok=True)
+            filename = os.path.join(results_input_dir, "config.json")
             
             if not os.path.exists(filename):
                 try:
@@ -1131,9 +1140,11 @@ def execute_strategy():
         # Auto-save multi-condition config
         if use_json != 'y':
             
-            # Create input folder if it doesn't exist
-            os.makedirs("results/input", exist_ok=True)
-            filename = "results/input/config_multi_condition.json"
+            # Create input folder if it doesn't exist (relative to project root)
+            project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+            results_input_dir = os.path.join(project_root, "results", "input")
+            os.makedirs(results_input_dir, exist_ok=True)
+            filename = os.path.join(results_input_dir, "config_multi_condition.json")
             
             if not os.path.exists(filename):
                 try:
@@ -1349,11 +1360,13 @@ def execute_strategy():
         
         # Save multi-ticker results to JSON
         
-        # Create output folder if it doesn't exist
-        os.makedirs("results/output", exist_ok=True)
+        # Create output folder if it doesn't exist (relative to project root)
+        project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+        results_output_dir = os.path.join(project_root, "results", "output")
+        os.makedirs(results_output_dir, exist_ok=True)
         
         # Use standard filename instead of timestamp
-        results_filename = f"results/output/{strategy_complexity}_results.json"
+        results_filename = os.path.join(results_output_dir, f"{strategy_complexity}_results.json")
         
         # Get final results from portfolio manager
         final_prices = {}
@@ -1463,11 +1476,13 @@ def execute_strategy():
     # Save results to JSON for single strategies (Mode 1 & 2)
     if strategy_complexity in ["single", "multi_condition"] and executor is not None:
         
-        # Create output folder if it doesn't exist
-        os.makedirs("results/output", exist_ok=True)
+        # Create output folder if it doesn't exist (relative to project root)
+        project_root = os.path.join(os.path.dirname(__file__), '..', '..')
+        results_output_dir = os.path.join(project_root, "results", "output")
+        os.makedirs(results_output_dir, exist_ok=True)
         
         # Use standard filename instead of timestamp
-        results_filename = f"results/output/{strategy_complexity}_{ticker}_results.json"
+        results_filename = os.path.join(results_output_dir, f"{strategy_complexity}_{ticker}_results.json")
         
         # Build configuration dict
         config_dict = {
