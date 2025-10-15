@@ -3,11 +3,16 @@ from comparisons import *
 from display import *
 from metrics import *
 from comparision_types import ComparisonType
-import yfinance as yf
+import requests
+import pandas as pd
+from datetime import datetime, timedelta
 import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 from validation import validate_ticker, validate_timeframe_period, validate_timeframe_interval, validate_positive_number, validate_choice, validate_timeframe_combination, validate_capital_allocation, validate_stop_loss_take_profit_logic
+
+# FMP API Configuration
+FMP_API_KEY = "kZ2IufkTebqBJoodhTojSFLZpBqhyKbO"
 
 
 
@@ -1343,14 +1348,23 @@ def get_time_interval_inputs():
 
 
 def download_and_prepare_data(ticker, period="5y", interval="4h"):
-    """Download and prepare stock data with configurable period and interval"""
+    """Download and prepare stock data with configurable period and interval using FMP"""
     
     # Validate ticker first
     print(f"🔍 Validating ticker: {ticker}...")
     try:
-        import yfinance as yf
-        test_data = yf.download(ticker, period="5d", interval="1d", progress=False)
-        if test_data.empty:
+        # Test with FMP API
+        url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}"
+        params = {
+            "apikey": FMP_API_KEY, 
+            "from": (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d')
+        }
+        
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get("historical"):
             print(f"❌ Ticker '{ticker}' not found or has no data.")
             print("💡 Please check the ticker symbol and try again.")
             return None
@@ -1363,68 +1377,86 @@ def download_and_prepare_data(ticker, period="5y", interval="4h"):
     
     print(f"Downloading {period} of {interval} data for {ticker}...")
 
-    
-
     try:
-
-        data = yf.Ticker(ticker).history(period=period, interval=interval)
-
+        # Map intervals to FMP format
+        fmp_interval_map = {
+            '1d': 'historical-price-full',
+            '1h': 'historical-chart/1hour',
+            '4h': 'historical-chart/4hour', 
+            '15m': 'historical-chart/15min',
+            '5m': 'historical-chart/5min',
+            '1m': 'historical-chart/1min'
+        }
         
-
-        if data.empty:
-
-            print(f"❌ No data available for {ticker} with {period} period and {interval} interval")
-
-            print("💡 Try shorter periods for intraday data (e.g., 1y for 1h, 60d for 15m)")
-
-            return None
-
+        fmp_interval = fmp_interval_map.get(interval, 'historical-price-full')
         
-
-        # Reset index and format date
-
-        data_reset = data.reset_index()
-
-        
-
-        # Handle different date formats
-
-        if 'Date' in data_reset.columns:
-
-            data_reset['Date'] = data_reset['Date'].dt.date
-
-        elif 'Datetime' in data_reset.columns:
-
-            data_reset['Date'] = data_reset['Datetime'].dt.date
-
+        # Calculate date range based on period
+        end_date = datetime.now()
+        if period == '1y':
+            start_date = end_date - timedelta(days=365)
+        elif period == '2y':
+            start_date = end_date - timedelta(days=730)
+        elif period == '5y':
+            start_date = end_date - timedelta(days=1825)
+        elif period == '10y':
+            start_date = end_date - timedelta(days=3650)
         else:
-
-            # If no date column, use index
-
-            data_reset['Date'] = data_reset.index.date
-
+            start_date = end_date - timedelta(days=365)  # Default to 1 year
         
-
+        url = f"https://financialmodelingprep.com/api/v3/{fmp_interval}/{ticker}"
+        params = {
+            "apikey": FMP_API_KEY,
+            "from": start_date.strftime('%Y-%m-%d'),
+            "to": end_date.strftime('%Y-%m-%d')
+        }
+        
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if fmp_interval == 'historical-price-full':
+            historical_data = data.get("historical", [])
+        else:
+            historical_data = data
+        
+        if not historical_data:
+            print(f"❌ No data available for {ticker} with {period} period and {interval} interval")
+            print("💡 Try shorter periods for intraday data (e.g., 1y for 1h, 60d for 15m)")
+            return None
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(historical_data)
+        
+        # Standardize column names and format
+        if 'date' in df.columns:
+            df['Date'] = pd.to_datetime(df['date']).dt.tz_localize(None)
+            df = df.drop('date', axis=1)
+        
+        # Standardize OHLCV column names to match yfinance format
+        column_mapping = {
+            'open': 'Open',
+            'high': 'High', 
+            'low': 'Low',
+            'close': 'Close',
+            'volume': 'Volume'
+        }
+        
+        df = df.rename(columns=column_mapping)
+        df = df.sort_values('Date')
+        
+        # Reset index to match yfinance format
+        data_reset = df.reset_index(drop=True)
+        
         print(f"✅ Downloaded {len(data_reset)} {interval} intervals of data ({period})")
-
         return data_reset
-
         
-
     except Exception as e:
-
         print(f"❌ Error downloading data: {str(e)}")
-
         print("💡 Try different period/interval combinations:")
-
         print("   - Daily data: up to 10 years")
-
         print("   - 4-hour data: up to 2 years") 
-
         print("   - 1-hour data: up to 2 years")
-
         print("   - 15-minute data: up to 60 days")
-
         return None
 
 
@@ -1440,9 +1472,18 @@ def download_multi_ticker_data(tickers, period, interval):
     for ticker in tickers:
         print(f"🔍 Validating ticker: {ticker}...")
         try:
-            import yfinance as yf
-            test_data = yf.download(ticker, period="5d", interval="1d", progress=False)
-            if test_data.empty:
+            # Test with FMP API
+            url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}"
+            params = {
+                "apikey": FMP_API_KEY, 
+                "from": (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d')
+            }
+            
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            if not data.get("historical"):
                 print(f"❌ Ticker '{ticker}' not found or has no data.")
                 print(f"💡 Skipping '{ticker}' - please check the ticker symbol.")
                 continue
@@ -1469,8 +1510,6 @@ def download_multi_ticker_data(tickers, period, interval):
 
     try:
 
-        import yfinance as yf
-
         import pandas as pd
 
         
@@ -1486,55 +1525,54 @@ def download_multi_ticker_data(tickers, period, interval):
 
             print(f"\n📊 Downloading {ticker}...")
 
-            stock = yf.Ticker(ticker)
-
-            data = stock.history(period=period, interval=interval)
-
+            # Download data using FMP API
+            url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}"
+            params = {
+                "apikey": FMP_API_KEY,
+                "from": (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d'),
+                "to": datetime.now().strftime('%Y-%m-%d')
+            }
             
-
-            if data.empty:
-
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            historical_data = data.get("historical", [])
+            if not historical_data:
                 print(f"❌ No data found for {ticker}")
-
                 return None
-
             
-
-            # Reset index to make Date a column
-
-            data.reset_index(inplace=True)
-
+            # Convert to DataFrame
+            df = pd.DataFrame(historical_data)
             
-
-            # Handle different date formats and normalize timezone
-
-            if 'Date' in data.columns:
-
-                data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None)
-
-            elif 'Datetime' in data.columns:
-
-                data['Date'] = pd.to_datetime(data['Datetime']).dt.tz_localize(None)
-
-                data = data.drop('Datetime', axis=1)
-
+            # Standardize column names and format
+            if 'date' in df.columns:
+                df['Date'] = pd.to_datetime(df['date']).dt.tz_localize(None)
+                df = df.drop('date', axis=1)
             
-
-            ticker_data[ticker] = data
-
-            all_dates.update(data['Date'].dt.date)
-
+            # Standardize OHLCV column names to match yfinance format
+            column_mapping = {
+                'open': 'Open',
+                'high': 'High', 
+                'low': 'Low',
+                'close': 'Close',
+                'volume': 'Volume'
+            }
             
-
-            print(f"  ✅ {ticker}: {len(data)} data points")
+            df = df.rename(columns=column_mapping)
+            df = df.sort_values('Date')
+            
+            ticker_data[ticker] = df
+            # Ensure Date is datetime64 before using .dt accessor
+            date_series = pd.to_datetime(df['Date'], errors='coerce')
+            all_dates.update(date_series.dt.normalize())
+            print(f"  ✅ {ticker}: {len(df)} data points")
 
         
 
         # Create unified DataFrame with all dates
-
-        all_dates = sorted(list(all_dates))
-
-        unified_data = pd.DataFrame({'Date': pd.to_datetime(all_dates)})
+        all_dates_list = sorted(list(all_dates))
+        unified_data = pd.DataFrame({'Date': pd.to_datetime(all_dates_list)})
 
         
 

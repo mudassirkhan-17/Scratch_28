@@ -35,6 +35,9 @@ from trade_executor import TradeExecutor
 from multi_ticker_portfolio import MultiTickerPortfolioManager
 from multicondition import MultiConditionDetector
 
+# Analysis imports
+from analyze_results import analyze_results
+
     
     
 """First function to run, will take all inputs from user and store in a variable"""
@@ -1465,6 +1468,43 @@ def execute_strategy():
         
         print(f"\n💾 Multi-ticker results saved to: {results_filename}")
         
+        # 🧠 AI-POWERED RESULTS ANALYSIS (only in AI mode)
+        if input_mode == "1":  # AI mode
+            print("\n" + "="*60)
+            print("🧠 AI RESULTS ANALYSIS")
+            print("="*60)
+            
+            try:
+                # Get AI analysis
+                analysis_result = analyze_results(results_filename, return_data=True)
+                
+                if analysis_result and analysis_result.get('success'):
+                    metrics = analysis_result['metrics']
+                    
+                    # Display key metrics
+                    print("KEY METRICS:")
+                    print(f"• Total Return: {metrics['total_return']:.2f}%")
+                    print(f"• Win Rate: {metrics['win_rate']:.1f}%")
+                    print(f"• Total Trades: {metrics['total_trades']}")
+                    print(f"• Max Drawdown: {metrics['max_drawdown']:.2f}%")
+                    print(f"• Sharpe Ratio: {metrics['sharpe_ratio']:.3f}")
+                    print("="*60)
+                    
+                    # Display analysis
+                    print("ANALYSIS:")
+                    print(analysis_result['analysis'])
+                    print("="*60)
+                    
+                    print("✅ AI analysis completed!")
+                    
+                else:
+                    error_msg = analysis_result.get('error', 'Unknown error') if analysis_result else 'No result returned'
+                    print(f"❌ Analysis failed: {error_msg}")
+                    
+            except Exception as e:
+                print(f"❌ Error during AI analysis: {e}")
+                print("💡 Results saved successfully, but analysis skipped")
+        
     elif strategy_type == "long":
         data, trades, executor = execute_long_strategy(data, strategy_data, sl_tp_config, total_capital, per_trade_config)
     elif strategy_type == "short":
@@ -1517,6 +1557,43 @@ def execute_strategy():
             config_dict["exit_logic"] = exit_logic
         
         executor.save_results_to_json(data, config_dict, results_filename)
+        
+        # 🧠 AI-POWERED RESULTS ANALYSIS (only in AI mode)
+        if input_mode == "1":  # AI mode
+            print("\n" + "="*60)
+            print("🧠 AI RESULTS ANALYSIS")
+            print("="*60)
+            
+            try:
+                # Get AI analysis
+                analysis_result = analyze_results(results_filename, return_data=True)
+                
+                if analysis_result and analysis_result.get('success'):
+                    metrics = analysis_result['metrics']
+                    
+                    # Display key metrics
+                    print("KEY METRICS:")
+                    print(f"• Total Return: {metrics['total_return']:.2f}%")
+                    print(f"• Win Rate: {metrics['win_rate']:.1f}%")
+                    print(f"• Total Trades: {metrics['total_trades']}")
+                    print(f"• Max Drawdown: {metrics['max_drawdown']:.2f}%")
+                    print(f"• Sharpe Ratio: {metrics['sharpe_ratio']:.3f}")
+                    print("="*60)
+                    
+                    # Display analysis
+                    print("ANALYSIS:")
+                    print(analysis_result['analysis'])
+                    print("="*60)
+                    
+                    print("✅ AI analysis completed!")
+                    
+                else:
+                    error_msg = analysis_result.get('error', 'Unknown error') if analysis_result else 'No result returned'
+                    print(f"❌ Analysis failed: {error_msg}")
+                    
+            except Exception as e:
+                print(f"❌ Error during AI analysis: {e}")
+                print("💡 Results saved successfully, but analysis skipped")
     
     return strategy_data, data, trades
 
