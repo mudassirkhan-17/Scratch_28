@@ -92,7 +92,28 @@ class IndicatorRegistry:
             "MDI": minus_directional_indicator,
             "PDM": plus_directional_movement,
             "MDM": minus_directional_movement,
-            "MBB": momentum_breakout_bands
+            "MBB": momentum_breakout_bands,
+            
+            # Batch 1: Essential Oscillators
+            "MACD": macd,
+            "CCI": commodity_channel_index,
+            "STOCH": stochastic,
+            "WILLR": williams_r,
+            "ULTOSC": ultimate_oscillator,
+            
+            # Batch 2: Volatility Indicators
+            "ATR": average_true_range,
+            "BB": bollinger_bands,
+            "BBW": bollinger_bands_width,
+            "DONCHIAN": donchian_channel,
+            "KC": keltner_channel,
+            
+            # Batch 3: Trend Indicators
+            "ICHIMOKU": ichimoku_cloud,
+            "SAR": parabolic_sar,
+            "SUPERTREND": supertrend,
+            "AROON": aroon,
+            "AROON_OSC": aroon_oscillator
         }
     
     def register(self, name, function):
@@ -1127,6 +1148,111 @@ def calculate_indicator(data, indicator_name, params):
         upper = params[3] if len(params) >= 4 else 60
         lower = params[4] if len(params) >= 5 else -60
         return indicator_func(data, period1, period2, signal, upper, lower)
+    
+    # Batch 1: Essential Oscillators Parameter Handling
+    elif indicator_name == "MACD":
+        # MACD with defaults: fast=12, slow=26, signal=9
+        fast = params[0] if len(params) >= 1 else 12
+        slow = params[1] if len(params) >= 2 else 26
+        signal = params[2] if len(params) >= 3 else 9
+        return indicator_func(data, fast, slow, signal)
+    elif indicator_name == "CCI":
+        # CCI with defaults: period=20, upper=100, lower=-100
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 20, "CCI")
+        upper = params[1] if len(params) >= 2 else 100
+        lower = params[2] if len(params) >= 3 else -100
+        return indicator_func(data, period, upper, lower)
+    elif indicator_name == "STOCH":
+        # Stochastic with defaults: period=14, upper=80, lower=20
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 14, "Stochastic")
+        upper = params[1] if len(params) >= 2 else 80
+        lower = params[2] if len(params) >= 3 else 20
+        return indicator_func(data, period, upper, lower)
+    elif indicator_name == "WILLR":
+        # Williams %R with defaults: period=14, upper=-20, lower=-80
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 14, "Williams %R")
+        upper = params[1] if len(params) >= 2 else -20
+        lower = params[2] if len(params) >= 3 else -80
+        return indicator_func(data, period, upper, lower)
+    elif indicator_name == "ULTOSC":
+        # Ultimate Oscillator with defaults: period1=7, period2=14, period3=28, upper=70, lower=30
+        period1 = validate_indicator_period(params[0] if len(params) >= 1 else 7, "Ultimate Oscillator Period 1")
+        period2 = validate_indicator_period(params[1] if len(params) >= 2 else 14, "Ultimate Oscillator Period 2")
+        period3 = validate_indicator_period(params[2] if len(params) >= 3 else 28, "Ultimate Oscillator Period 3")
+        upper = params[3] if len(params) >= 4 else 70
+        lower = params[4] if len(params) >= 5 else 30
+        return indicator_func(data, period1, period2, period3, upper, lower)
+    
+    # Batch 2: Volatility Indicators Parameter Handling
+    elif indicator_name == "ATR":
+        # ATR with defaults: period=14, threshold=0.1
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 14, "ATR")
+        threshold = params[1] if len(params) >= 2 else 0.1
+        return indicator_func(data, period, threshold)
+    elif indicator_name == "BB":
+        # Bollinger Bands with defaults: period=20, multiplier=2, baseline=0.5, lower=0.2, upper=0.8
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 20, "Bollinger Bands")
+        multiplier = params[1] if len(params) >= 2 else 2
+        baseline = params[2] if len(params) >= 3 else 0.5
+        lower = params[3] if len(params) >= 4 else 0.2
+        upper = params[4] if len(params) >= 5 else 0.8
+        return indicator_func(data, period, multiplier, baseline, lower, upper)
+    elif indicator_name == "BBW":
+        # Bollinger Bands Width with defaults: period=20, multiplier=2, baseline=0.05, lower=0.02, upper=0.1
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 20, "Bollinger Bands Width")
+        multiplier = params[1] if len(params) >= 2 else 2
+        baseline = params[2] if len(params) >= 3 else 0.05
+        lower = params[3] if len(params) >= 4 else 0.02
+        upper = params[4] if len(params) >= 5 else 0.1
+        return indicator_func(data, period, multiplier, baseline, lower, upper)
+    elif indicator_name == "DONCHIAN":
+        # Donchian Channel with defaults: period=20, tolerance=0.01
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 20, "Donchian Channel")
+        tolerance = params[1] if len(params) >= 2 else 0.01
+        return indicator_func(data, period, tolerance)
+    elif indicator_name == "KC":
+        # Keltner Channel with defaults: period=20, multiplier=2, atr_period=10, distance_threshold=0.0
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 20, "Keltner Channel")
+        multiplier = params[1] if len(params) >= 2 else 2
+        atr_period = validate_indicator_period(params[2] if len(params) >= 3 else 10, "Keltner Channel ATR Period")
+        distance_threshold = params[3] if len(params) >= 4 else 0.0
+        return indicator_func(data, period, multiplier, atr_period, distance_threshold)
+    
+    # Batch 3: Trend Indicators Parameter Handling
+    elif indicator_name == "ICHIMOKU":
+        # Ichimoku Cloud with defaults: conversion=9, base=26, leading_b=52, displacement=26
+        conversion = validate_indicator_period(params[0] if len(params) >= 1 else 9, "Ichimoku Conversion Line")
+        base = validate_indicator_period(params[1] if len(params) >= 2 else 26, "Ichimoku Base Line")
+        leading_b = validate_indicator_period(params[2] if len(params) >= 3 else 52, "Ichimoku Leading Span B")
+        displacement = validate_indicator_period(params[3] if len(params) >= 4 else 26, "Ichimoku Displacement")
+        return indicator_func(data, conversion, base, leading_b, displacement)
+    elif indicator_name == "SAR":
+        # Parabolic SAR with defaults: initial_af=0.02, max_af=0.2, baseline=0, lower=-0.5, upper=0.5
+        initial_af = params[0] if len(params) >= 1 else 0.02
+        max_af = params[1] if len(params) >= 2 else 0.2
+        baseline = params[2] if len(params) >= 3 else 0
+        lower = params[3] if len(params) >= 4 else -0.5
+        upper = params[4] if len(params) >= 5 else 0.5
+        return indicator_func(data, initial_af, max_af, baseline, lower, upper)
+    elif indicator_name == "SUPERTREND":
+        # Supertrend with defaults: period=10, multiplier=3.0
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 10, "Supertrend")
+        multiplier = params[1] if len(params) >= 2 else 3.0
+        return indicator_func(data, period, multiplier)
+    elif indicator_name == "AROON":
+        # Aroon with defaults: period=25, baseline=0, upper=50, lower=-50
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 25, "Aroon")
+        baseline = params[1] if len(params) >= 2 else 0
+        upper = params[2] if len(params) >= 3 else 50
+        lower = params[3] if len(params) >= 4 else -50
+        return indicator_func(data, period, baseline, upper, lower)
+    elif indicator_name == "AROON_OSC":
+        # Aroon Oscillator with defaults: period=25, baseline=0, upper=50, lower=-50
+        period = validate_indicator_period(params[0] if len(params) >= 1 else 25, "Aroon Oscillator")
+        baseline = params[1] if len(params) >= 2 else 0
+        upper = params[2] if len(params) >= 3 else 50
+        lower = params[3] if len(params) >= 4 else -50
+        return indicator_func(data, period, baseline, upper, lower)
     else:
         # Handle both list and dict formats for params
         if isinstance(params, dict):
@@ -1134,6 +1260,94 @@ def calculate_indicator(data, indicator_name, params):
             return indicator_func(data, period)
         else:
             return indicator_func(data, params[0])  # Only period
+
+# Batch 1: Essential Oscillators Implementation
+def macd(data, fast_period=12, slow_period=26, signal_period=9):
+    """Calculate MACD (Moving Average Convergence Divergence)"""
+    macd_strategy = MACDStrategies(fast_period, slow_period, signal_period)
+    return macd_strategy.compute_values(data)
+
+def commodity_channel_index(data, period=20, upper_threshold=100, lower_threshold=-100):
+    """Calculate CCI (Commodity Channel Index)"""
+    cci_strategy = CommodityChannelIndexStrategies(period, upper_threshold, lower_threshold)
+    return cci_strategy.compute_values(data)
+
+def stochastic(data, period=14, upper_threshold=80, lower_threshold=20):
+    """Calculate Stochastic Oscillator"""
+    stoch_strategy = StochasticStrategies(period, 50, upper_threshold, lower_threshold)
+    return stoch_strategy.compute_values(data)
+
+def williams_r(data, period=14, upper_threshold=-20, lower_threshold=-80):
+    """Calculate Williams %R"""
+    willr_strategy = WilliamsRStrategies(period, upper_threshold, lower_threshold)
+    return willr_strategy.compute_values(data)
+
+def ultimate_oscillator(data, period1=7, period2=14, period3=28, upper_threshold=70, lower_threshold=30):
+    """Calculate Ultimate Oscillator"""
+    ultosc_strategy = UltimateOscillatorStrategies(period1, period2, period3, 50, lower_threshold, upper_threshold)
+    return ultosc_strategy.compute_values(data)
+
+# Batch 2: Volatility Indicators Implementation
+def average_true_range(data, period=14, threshold=0.1):
+    """Calculate ATR (Average True Range)"""
+    atr_strategy = AverageTrueRangeStrategies(period, threshold)
+    return atr_strategy.compute_values(data)
+
+def bollinger_bands(data, period=20, multiplier=2, baseline=0.5, lower_threshold=0.2, upper_threshold=0.8):
+    """Calculate Bollinger Bands %B"""
+    bb_strategy = BollingerBandsStrategies(period, multiplier, baseline, lower_threshold, upper_threshold)
+    return bb_strategy.compute_values(data)
+
+def bollinger_bands_width(data, period=20, multiplier=2, baseline=0.05, lower_threshold=0.02, upper_threshold=0.1):
+    """Calculate Bollinger Bands Width"""
+    bbw_strategy = BollingerBandsWidthStrategies(period, multiplier, baseline, lower_threshold, upper_threshold)
+    return bbw_strategy.compute_values(data)
+
+def donchian_channel(data, period=20, tolerance=0.01):
+    """Calculate Donchian Channel"""
+    donchian_strategy = DonchianChannelStrategies(period, tolerance)
+    return donchian_strategy.compute_values(data)
+
+def keltner_channel(data, period=20, multiplier=2, atr_period=10, distance_threshold=0.0):
+    """Calculate Keltner Channel"""
+    kc_strategy = KeltnerChannelStrategies(period, multiplier, atr_period, distance_threshold)
+    result = kc_strategy.compute_values(data)
+    # Convert dict to DataFrame for consistency
+    return pd.DataFrame(result, index=data.index)
+
+# Batch 3: Trend Indicators Implementation
+def ichimoku_cloud(data, conversion_line_period=9, base_line_period=26, leading_span_b_period=52, displacement=26):
+    """Calculate Ichimoku Cloud"""
+    ichimoku_strategy = IchimokuCloudStrategies(conversion_line_period, base_line_period, leading_span_b_period, displacement)
+    result = ichimoku_strategy.compute_values(data)
+    # Convert dict to DataFrame for consistency
+    return pd.DataFrame(result, index=data.index)
+
+def parabolic_sar(data, initial_af=0.02, max_af=0.2, baseline=0, lower_threshold=-0.5, upper_threshold=0.5):
+    """Calculate Parabolic SAR"""
+    sar_strategy = ParabolicStopAndReverseStrategies(initial_af, max_af, baseline, lower_threshold, upper_threshold)
+    return sar_strategy.compute_values(data)
+
+def supertrend(data, period=10, multiplier=3.0):
+    """Calculate Supertrend"""
+    supertrend_strategy = SupertrendStrategies(period, multiplier)
+    supertrend_values, trend_values = supertrend_strategy.compute_values(data)
+    # Convert tuple to DataFrame for consistency
+    return pd.DataFrame({'Supertrend': supertrend_values, 'Trend': trend_values}, index=data.index)
+
+def aroon(data, period=25, baseline=0, upper_threshold=50, lower_threshold=-50):
+    """Calculate Aroon"""
+    aroon_strategy = AroonStrategies(period, baseline, upper_threshold, lower_threshold)
+    aroon_up, aroon_down, aroon_osc = aroon_strategy.compute_values(data)
+    # Convert tuple to DataFrame for consistency
+    return pd.DataFrame({'Aroon_Up': aroon_up, 'Aroon_Down': aroon_down, 'Aroon_Osc': aroon_osc}, index=data.index)
+
+def aroon_oscillator(data, period=25, baseline=0, upper_threshold=50, lower_threshold=-50):
+    """Calculate Aroon Oscillator"""
+    aroon_osc_strategy = AroonOscillatorStrategies(period, baseline, upper_threshold, lower_threshold)
+    aroon_up, aroon_down, aroon_osc = aroon_osc_strategy.compute_values(data)
+    # Convert tuple to DataFrame for consistency
+    return pd.DataFrame({'Aroon_Up': aroon_up, 'Aroon_Down': aroon_down, 'Aroon_Osc': aroon_osc}, index=data.index)
 
 # Global registry instance - created after all functions are defined
 indicator_registry = IndicatorRegistry()
